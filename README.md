@@ -16,6 +16,8 @@ Actions keep track of previous successful inputs in order to trigger events.
 If the previous input is nonexistant, for instance if the input is *invalidated*,
 the action is ignored, since the events require a previous input to compare against.
 
+An input system entity can be disabled by inserting `InputDisabled` on it.
+
 ## Usage
 
 Add the `PrettyNiceInputPlugin` plugin to your project.
