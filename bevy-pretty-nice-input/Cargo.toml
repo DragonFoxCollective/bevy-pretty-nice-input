@@ -2,6 +2,12 @@
 name = "bevy-pretty-nice-input"
 version = "0.1.0"
 edition = "2024"
+description = "A refreshingly complex input crate for Bevy"
+categories = ["game-development"]
+keywords = ["bevy", "input"]
+rust-version = "1.88.0"                                                      # Follows bevy 0.17
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/DragonFoxCollective/bevy-pretty-nice-input"
 
 [features]
 debug_graph = ["bevy-pretty-nice-input-derive/debug_graph"]
