@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+	"bevy-pretty-nice-input",
+	"bevy-pretty-nice-input-derive",
+	"bevy-pretty-nice-menus",
+]
