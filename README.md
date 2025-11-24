@@ -94,3 +94,70 @@ Common conditions include:
 - `ResetBuffer`: Stops any previous input buffers. Doesn't affect the current input in any way.
 
 The conditions array in `input!` may be omitted entirely.
+
+### `input_transition!`
+
+Where BPNI really shines is its state-machine macro.
+
+```rust
+// input_transition!(action: states <=/<=>/=> states, Axis_D[bindings], [conditions])
+input_transition!(MyAction: Standing <=> Walking, Axis2D[binding2d::wasd()])
+```
+
+In this example, `Standing` and `Walking` are two states that transition back and forth depending on the WASD bindings,
+being inserted and removed from the input system entity during the transition.
+
+There are many types of transitions. The transition arrow can be unidirectional in either direction,
+representing whether the transition ocurrs through the `JustPressed` or `JustReleased` events.
+
+```rust
+input_transition!(MyActionPressed: Standing => Walking, Axis2D[binding2d::wasd()]) // Transition from Standing to Walking on JustPressed<MyActionPressed>
+input_transition!(MyActionReleased: Standing <= Walking, Axis2D[binding2d::wasd()]) // Transition from Walking to Standing on JustReleased<MyActionReleased>
+```
+
+The input system may transition out of multiple states at once, but not into multiple states.
+
+```rust
+input_transition!(MyAction: Standing => (Walking, Sprinting), Axis2D[binding2d::wasd()]) // Compile error
+input_transition!(MyAction: Standing <= (Walking, Sprinting), Axis2D[binding2d::wasd()]) // Transition from Walking or Sprinting to Standing on JustReleased<MyAction>
+```
+
+When transitioning from multiple states, one state may be pointed back to in its bundle.
+
+```rust
+input_transition!(MyAction: Standing <= (Sprinting, => Walking), Axis2D[binding2d::wasd()]) // Transition from Walking or Sprinting to Standing on JustReleased<MyAction>, and from Standing to Walking on JustPressed<MyAction>
+```
+
+For clarity, the state to transition to may be replaced with `*`, representing a manually-controlled transition.
+This is equivalent to the `input!` macro with an extra filter.
+
+```rust
+input_transition!(Jump: (Standing, Walking) => *, Axis1D[binding1d::space()]) // Triggers JustPressed<Jump>, but only in the Standing or Walking states
+```
+
+Conditions may be used, but only on unidirectional transitions.
+
+```rust
+input_transition!(MyAction: Standing => Walking, Axis2D[binding2d::wasd()], [Filter::<Grounded>::default()]) // Transition from Standing to Walking on JustPressed<MyAction>, when the Grounded component is present on the input system
+input_transition!(MyAction: Standing <=> Walking, Axis2D[binding2d::wasd()], [Filter::<Grounded>::default()]) // Compile error
+```
+
+### `ComponentBuffer`
+
+Component buffering is the compliment to input buffering. A common use case for component buffering is "coyote time".
+
+Component buffering manages a separate state component `ComponentBuffer<T: Component>`,
+adding it when `T` is added, and removing it a certain amount of time after `T` is removed.
+
+Component buffers can be set up by adding `ComponentBuffer::observe(duration: f32)` to the input system.
+
+```rust
+ComponentBuffer::<Grounded>::observe(0.2) // Adds ComponentBuffer<Grounded> when Grounded is added, and removes it 0.2 seconds after Grounded is removed
+```
+
+For convenience, there is an alias for `Filter<With<ComponentBuffer<T>>>` that is `FilterBuffered<T>`.
+
+### `bundles::observe` and `bundles::add_system`
+
+`observe` and `add_system` are bundle effect versions of `entity.observe` and `schedule.add_system` respectively.
+`observe` already exists in Bevy, but only in the experiemental UI crate that I didn't want to depend on.
