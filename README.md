@@ -1,14 +1,14 @@
-# Bevy Pretty Nice Input
+# bevy_pretty_nice_input
 
-[![crates.io](https://img.shields.io/crates/v/bevy-pretty-nice-input)](https://crates.io/crates/bevy-pretty-nice-input)
+[![crates.io](https://img.shields.io/crates/v/bevy_pretty_nice_input)](https://crates.io/crates/bevy_pretty_nice_input)
 
-| bevy  | bevy-pretty-nice-input |
+| bevy  | bevy_pretty_nice_input |
 |-------|------------------------|
-| 0.17  | 0.1                    |
+| 0.17  | 0.1, 0.2               |
 
 A refreshingly complex input crate for Bevy.
 
-It works similarly to [bevy-enhanced-input](https://crates.io/crates/bevy_enhanced_input).
+It works similarly to [bevy_enhanced_input](https://crates.io/crates/bevy_enhanced_input).
 
 An input system entity relates to several `Action` entities, which each relate to several `Binding` entities (which then related to several `BindingPart` entities) and `Condition` entities.
 

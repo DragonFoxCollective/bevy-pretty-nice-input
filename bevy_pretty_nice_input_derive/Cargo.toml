@@ -1,10 +1,10 @@
 [package]
-name = "bevy-pretty-nice-input-derive"
-version = "0.1.0"
+name = "bevy_pretty_nice_input_derive"
+version = "0.2.0"
 edition = "2024"
-description = "Procedural macros for bevy-pretty-nice-input"
+description = "Procedural macros for bevy_pretty_nice_input"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/DragonFoxCollective/bevy-pretty-nice-input"
+repository = "https://github.com/DragonFoxCollective/bevy_pretty_nice_input"
 
 [lib]
 proc-macro = true
