@@ -20,7 +20,7 @@ An input system entity can be disabled by inserting `InputDisabled` on it.
 
 ## Usage
 
-Add the `PrettyNiceInputPlugin` plugin to your project.
+Add the `PrettyNiceInputPlugin` plugin to your app.
 
 ### `input!`
 
