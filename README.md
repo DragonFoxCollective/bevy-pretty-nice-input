@@ -1,5 +1,11 @@
 # Bevy Pretty Nice Input
 
+[![crates.io](https://img.shields.io/crates/v/bevy-pretty-nice-input)](https://crates.io/crates/bevy-pretty-nice-input)
+
+| bevy  | bevy-pretty-nice-input |
+|-------|------------------------|
+| 0.17  | 0.1                    |
+
 A refreshingly complex input crate for Bevy.
 
 It works similarly to [bevy-enhanced-input](https://crates.io/crates/bevy_enhanced_input).
