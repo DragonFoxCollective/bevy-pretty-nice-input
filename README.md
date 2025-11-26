@@ -17,6 +17,7 @@ When an input occurs, it may trigger one of several Bevy events:
 - `JustPressed<A: Action>`: When an input goes from zero to nonzero.
 - `Pressed<A: Action>`: When an input is nonzero.
 - `JustReleased<A: Action>`: When an input goes from nonzero to zero.
+- `Updated<A: Action>`: Any input
 
 Actions keep track of previous successful inputs in order to trigger events.
 If the previous input is nonexistant, for instance if the input is *invalidated*,

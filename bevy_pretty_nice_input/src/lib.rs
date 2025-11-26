@@ -304,6 +304,14 @@ impl ActionData {
         }
     }
 
+    pub fn as_1d_ok(&self) -> Result<f32> {
+        match self {
+            ActionData::Axis1D(value) => Ok(*value),
+            ActionData::Axis2D(_) => Err(BevyError::from("Expected Axis1D, found Axis2D")),
+            ActionData::Axis3D(_) => Err(BevyError::from("Expected Axis1D, found Axis3D")),
+        }
+    }
+
     pub fn as_2d(&self) -> Option<Vec2> {
         if let ActionData::Axis2D(value) = self {
             Some(*value)
@@ -312,11 +320,27 @@ impl ActionData {
         }
     }
 
+    pub fn as_2d_ok(&self) -> Result<Vec2> {
+        match self {
+            ActionData::Axis1D(_) => Err(BevyError::from("Expected Axis2D, found Axis1D")),
+            ActionData::Axis2D(value) => Ok(*value),
+            ActionData::Axis3D(_) => Err(BevyError::from("Expected Axis2D, found Axis3D")),
+        }
+    }
+
     pub fn as_3d(&self) -> Option<Vec3> {
         if let ActionData::Axis3D(value) = self {
             Some(*value)
         } else {
             None
+        }
+    }
+
+    pub fn as_3d_ok(&self) -> Result<Vec3> {
+        match self {
+            ActionData::Axis1D(_) => Err(BevyError::from("Expected Axis3D, found Axis1D")),
+            ActionData::Axis2D(_) => Err(BevyError::from("Expected Axis3D, found Axis2D")),
+            ActionData::Axis3D(value) => Ok(*value),
         }
     }
 

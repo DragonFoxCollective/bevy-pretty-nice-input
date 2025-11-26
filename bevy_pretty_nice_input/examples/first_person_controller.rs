@@ -1,0 +1,228 @@
+use bevy::prelude::*;
+use bevy::window::{CursorGrabMode, CursorOptions};
+use bevy_pretty_nice_input::{
+    Action, ButtonPress, ComponentBuffer, Cooldown, FilterBuffered, InputBuffer, JustPressed,
+    Pressed, PrettyNiceInputPlugin, ResetBuffer, Updated, binding1d, binding2d, input,
+};
+use bevy_rapier3d::prelude::*;
+
+fn main() -> AppExit {
+    App::new()
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_cursor_options: Some(CursorOptions {
+                visible: false,
+                grab_mode: CursorGrabMode::Locked,
+                ..default()
+            }),
+            ..default()
+        }))
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugins(PrettyNiceInputPlugin)
+        .add_systems(Startup, (setup_env, setup_player))
+        .add_systems(Update, (walk, update_grounded))
+        .add_observer(update_walk)
+        .add_observer(look)
+        .add_observer(jump)
+        .add_observer(exit_app)
+        .run()
+}
+
+fn setup_env(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let white = materials.add(StandardMaterial {
+        base_color: Color::WHITE,
+        ..Default::default()
+    });
+
+    commands.spawn((
+        Transform::from_xyz(0.0, -1.0, 0.0),
+        Collider::cuboid(50.0, 1.0, 50.0),
+        Mesh3d(meshes.add(Cuboid::new(100.0, 2.0, 100.0))),
+        MeshMaterial3d(white.clone()),
+    ));
+    commands.spawn((
+        Mesh3d(meshes.add(Sphere::new(1.0))),
+        MeshMaterial3d(white.clone()),
+    ));
+    commands.spawn((
+        DirectionalLight {
+            illuminance: 10000.0,
+            ..Default::default()
+        },
+        Transform::from_rotation(Quat::from_euler(
+            EulerRot::XYZ,
+            -std::f32::consts::FRAC_PI_4,
+            std::f32::consts::FRAC_PI_8,
+            0.0,
+        )),
+    ));
+}
+
+#[derive(Component)]
+pub struct Player {
+    speed: f32,
+    jump_force: f32,
+    look_sensitivity: f32,
+    walk_velocity: Vec3,
+    camera: Entity,
+    collider: Entity,
+}
+
+#[derive(Component)]
+pub struct Pitch(f32);
+
+fn setup_player(mut commands: Commands) {
+    let camera = commands
+        .spawn((
+            Camera3d::default(),
+            Projection::Perspective(PerspectiveProjection {
+                fov: 70.0f32.to_radians(),
+                ..default()
+            }),
+            Transform::from_xyz(0.0, 1.6, 0.0),
+            Pitch(0.0),
+        ))
+        .id();
+
+    let collider = commands
+        .spawn((
+            Collider::capsule_y(0.75, 0.25), // remember, the capsule radius is added to the height
+            Transform::from_xyz(0.0, 1.0, 0.0),
+        ))
+        .id();
+
+    commands
+        .spawn((
+            Player {
+                speed: 5.0,
+                jump_force: 5.0,
+                look_sensitivity: 0.002,
+                walk_velocity: Vec3::ZERO,
+                camera,
+                collider,
+            },
+            RigidBody::Dynamic,
+            Velocity::default(),
+            Transform::default(),
+            Visibility::default(),
+            LockedAxes::ROTATION_LOCKED,
+            (
+                input!(Walk, Axis2D[binding2d::wasd()]),
+                input!(Look, Axis2D[binding2d::mouse_move()]),
+                input!(
+                    Jump,
+                    Axis1D[binding1d::space()],
+                    [
+                        ButtonPress::default(),
+                        InputBuffer::new(0.2),
+                        FilterBuffered::<Grounded>::default(),
+                        Cooldown::new(0.5),
+                        ResetBuffer,
+                    ]
+                ),
+                input!(ExitApp, Axis1D[binding1d::key(KeyCode::Escape)]),
+            ),
+            ComponentBuffer::<Grounded>::observe(0.2),
+        ))
+        .add_children(&[camera, collider]);
+}
+
+#[derive(Action)]
+pub struct Walk;
+
+fn update_walk(walk: On<Updated<Walk>>, mut players: Query<&mut Player>) -> Result<()> {
+    let mut player = players.get_mut(walk.input)?;
+    let input = walk.data.as_2d_ok()?.clamp_length_max(1.0);
+    let walk_direction = Vec3::new(input.x, 0.0, -input.y);
+    player.walk_velocity = walk_direction * player.speed;
+    Ok(())
+}
+
+fn walk(mut players: Query<(&mut Velocity, &Player, &GlobalTransform)>) {
+    for (mut velocity, player, transform) in players.iter_mut() {
+        let vertical_velocity = velocity.linvel.project_onto(transform.up().as_vec3());
+        let horizontal_velocity = transform.rotation() * player.walk_velocity;
+        velocity.linvel = vertical_velocity + horizontal_velocity;
+    }
+}
+
+#[derive(Action)]
+pub struct Look;
+
+fn look(
+    look: On<Pressed<Look>>,
+    mut players: Query<(&mut Transform, &Player)>,
+    mut cameras: Query<(&mut Transform, &mut Pitch), Without<Player>>,
+) -> Result<()> {
+    let (mut player_transform, player) = players.get_mut(look.input)?;
+    let (mut camera_transform, mut pitch) = cameras.get_mut(player.camera)?;
+
+    let input = look.data.as_2d_ok()?;
+    let delta_yaw = -input.x * player.look_sensitivity;
+    let delta_pitch = -input.y * player.look_sensitivity;
+
+    player_transform.rotate_local_y(delta_yaw);
+    pitch.0 =
+        (pitch.0 + delta_pitch).clamp(-std::f32::consts::FRAC_PI_2, std::f32::consts::FRAC_PI_2);
+    camera_transform.rotation = Quat::from_axis_angle(Vec3::X, pitch.0);
+
+    Ok(())
+}
+
+#[derive(Action)]
+pub struct Jump;
+
+fn jump(
+    jump: On<JustPressed<Jump>>,
+    mut players: Query<(&mut Velocity, &GlobalTransform, &Player)>,
+) -> Result<()> {
+    let (mut velocity, transform, player) = players.get_mut(jump.input)?;
+    velocity.linvel = transform.up() * player.jump_force;
+    Ok(())
+}
+
+#[derive(Component)]
+pub struct Grounded;
+
+fn update_grounded(
+    mut bodies: Query<(Entity, &GlobalTransform, &Player)>,
+    rapier_context: ReadRapierContext,
+    mut commands: Commands,
+) -> Result {
+    let rapier_context = rapier_context.single()?;
+    for (player, transform, body) in bodies.iter_mut() {
+        let collider_entity = body.collider;
+        let mut hit = false;
+        rapier_context.intersect_ray(
+            transform.translation() + transform.up() * 0.05,
+            transform.down().into(),
+            0.25,
+            true,
+            QueryFilter::default(),
+            |collided_entity, _ray_intersection| {
+                if collided_entity == collider_entity {
+                    true
+                } else {
+                    hit = true;
+                    false
+                }
+            },
+        );
+        if hit {
+            commands.entity(player).insert(Grounded);
+        } else {
+            commands.entity(player).remove::<Grounded>();
+        }
+    }
+    Ok(())
+}
+
+#[derive(Action)]
+pub struct ExitApp;
+
+fn exit_app(_exit: On<Pressed<ExitApp>>, mut app_exit: MessageWriter<AppExit>) {
+    app_exit.write(AppExit::Success);
+}
