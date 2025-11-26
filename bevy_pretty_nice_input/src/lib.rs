@@ -13,7 +13,7 @@ pub mod bundles;
 #[cfg(feature = "debug_graph")]
 pub mod debug_graph;
 
-#[derive(EntityEvent)]
+#[derive(EntityEvent, Debug, Reflect)]
 pub struct JustPressed<A: Action> {
     #[event_target]
     pub input: Entity,
@@ -31,7 +31,7 @@ impl<A: Action> Clone for JustPressed<A> {
     }
 }
 
-#[derive(EntityEvent)]
+#[derive(EntityEvent, Debug, Reflect)]
 pub struct Pressed<A: Action> {
     #[event_target]
     pub input: Entity,
@@ -49,7 +49,7 @@ impl<A: Action> Clone for Pressed<A> {
     }
 }
 
-#[derive(EntityEvent)]
+#[derive(EntityEvent, Debug, Reflect)]
 pub struct JustReleased<A: Action> {
     #[event_target]
     pub input: Entity,
@@ -65,7 +65,7 @@ impl<A: Action> Clone for JustReleased<A> {
     }
 }
 
-#[derive(EntityEvent)]
+#[derive(EntityEvent, Debug, Reflect)]
 pub struct Updated<A: Action> {
     #[event_target]
     pub input: Entity,
@@ -83,7 +83,8 @@ impl<A: Action> Clone for Updated<A> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
+#[reflect(Debug)]
 pub enum AxisDirection {
     X,
     Y,
@@ -98,7 +99,8 @@ impl AxisDirection {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
+#[reflect(Debug)]
 pub enum MouseScrollDirection {
     Up,
     Down,
@@ -107,12 +109,15 @@ pub enum MouseScrollDirection {
 }
 
 mod binding_parts {
-    use bevy::prelude::Component;
+    use bevy::prelude::{Component, ReflectComponent};
+    use bevy::reflect::Reflect;
 
-    #[derive(Component)]
+    #[derive(Component, Debug, Reflect)]
+    #[reflect(Component, Debug)]
     pub struct Key(pub bevy::prelude::KeyCode);
 
-    #[derive(Component)]
+    #[derive(Component, Debug, Reflect)]
+    #[reflect(Component, Debug)]
     pub struct KeyAxis(
         pub bevy::prelude::KeyCode,
         pub bevy::prelude::KeyCode,
@@ -120,19 +125,24 @@ mod binding_parts {
         pub bool,
     );
 
-    #[derive(Component)]
+    #[derive(Component, Debug, Reflect)]
+    #[reflect(Component, Debug)]
     pub struct GamepadAxis(pub bevy::prelude::GamepadAxis);
 
-    #[derive(Component)]
+    #[derive(Component, Debug, Reflect)]
+    #[reflect(Component, Debug)]
     pub struct MouseButton(pub bevy::prelude::MouseButton);
 
-    #[derive(Component)]
+    #[derive(Component, Debug, Reflect)]
+    #[reflect(Component, Debug)]
     pub struct MouseMoveAxis(pub crate::AxisDirection);
 
-    #[derive(Component)]
+    #[derive(Component, Debug, Reflect)]
+    #[reflect(Component, Debug)]
     pub struct MouseScroll(pub crate::MouseScrollDirection);
 
-    #[derive(Component)]
+    #[derive(Component, Debug, Reflect)]
+    #[reflect(Component, Debug)]
     pub struct MouseScrollAxis(pub crate::AxisDirection);
 }
 
@@ -274,7 +284,8 @@ pub mod binding2d {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Clone, Debug, PartialEq)]
 pub enum ActionData {
     Axis1D(f32),
     Axis2D(Vec2),
@@ -373,13 +384,16 @@ impl ActionData {
     }
 }
 
-#[derive(Component, Default, Debug)]
+#[derive(Component, Default, Debug, Reflect)]
+#[reflect(Component, Default, Debug)]
 pub struct BindingPartData(pub f32);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 pub struct PrevActionData(pub ActionData);
 
-#[derive(Component, Default, Debug)]
+#[derive(Component, Default, Debug, Reflect)]
+#[reflect(Component, Default, Debug)]
 pub struct PrevAction2Data(pub Option<ActionData>);
 
 pub trait Action: Send + Sync + 'static {
@@ -388,7 +402,8 @@ pub trait Action: Send + Sync + 'static {
 }
 
 /// Gets added when its component is added, and removed after the timer expires when its component is removed.
-#[derive(Component)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
 pub struct ComponentBuffer<T: Component> {
     timer: Timer,
     _marker: PhantomData<T>,
@@ -431,39 +446,48 @@ fn tick_component_buffer<T: Component>(
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
 #[relationship_target(relationship = ActionOf<A>)]
 pub struct Actions<A: Action>(#[relationship] Vec<Entity>, PhantomData<A>);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
 #[relationship(relationship_target = Actions<A>)]
 pub struct ActionOf<A: Action>(#[relationship] Entity, PhantomData<A>);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 #[relationship_target(relationship = BindingOf)]
 pub struct Bindings(#[relationship] Vec<Entity>);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 #[relationship(relationship_target = Bindings)]
 pub struct BindingOf(#[relationship] Entity);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 #[relationship_target(relationship = BindingPartOf)]
 pub struct BindingParts(#[relationship] Vec<Entity>);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 #[relationship(relationship_target = BindingParts)]
 pub struct BindingPartOf(#[relationship] Entity);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 #[relationship_target(relationship = ConditionOf)]
 pub struct Conditions(#[relationship] Vec<Entity>);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 #[relationship(relationship_target = Conditions)]
 pub struct ConditionOf(#[relationship] Entity);
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct InputDisabled;
 
 pub trait Condition {
@@ -481,7 +505,8 @@ pub fn invalidate_pass(invalidate: On<InvalidateData>, mut commands: Commands) {
 }
 
 /// Only lets one valid input pass every duration.
-#[derive(Component)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 pub struct Cooldown {
     timer: Timer,
     prev: Option<ConditionedBindingUpdate>,
@@ -555,7 +580,8 @@ fn tick_cooldown(mut conditions: Query<&mut Cooldown>, time: Res<Time>, mut comm
 }
 
 /// Only lets the input pass if the query filter matches.
-#[derive(Component)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
 pub struct Filter<F: QueryFilter> {
     _marker: PhantomData<F>,
 }
@@ -588,7 +614,8 @@ impl<F: QueryFilter + Send + Sync + 'static> Condition for Filter<F> {
 }
 
 /// Only lets the input pass if the query filter matches. Otherwise, invalidates the input.
-#[derive(Component)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
 pub struct InvalidatingFilter<F: QueryFilter> {
     _marker: PhantomData<F>,
 }
@@ -624,7 +651,8 @@ impl<F: QueryFilter + Send + Sync + 'static> Condition for InvalidatingFilter<F>
 }
 
 /// Rising edge filter.
-#[derive(Component)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 pub struct ButtonPress {
     pub threshold: f32,
     prev: Option<ActionData>,
@@ -688,7 +716,8 @@ impl Condition for ButtonPress {
 }
 
 /// Falling edge filter.
-#[derive(Component)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 pub struct ButtonRelease {
     pub threshold: f32,
     prev: Option<ActionData>,
@@ -748,7 +777,8 @@ impl Condition for ButtonRelease {
 }
 
 /// Inverts the update between zero and nonzero, using the last nonzero input when the current input is zero.
-#[derive(Component, Default)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 pub struct Invert {
     prev_nonzero: Option<ActionData>,
 }
@@ -784,7 +814,8 @@ impl Condition for Invert {
 }
 
 /// Continues sending nonzero updates for a duration after the input stops being nonzero.
-#[derive(Component)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 pub struct InputBuffer {
     timer: Timer,
     prev: Option<ConditionedBindingUpdate>,
@@ -880,7 +911,8 @@ fn tick_input_buffer(
     }
 }
 
-#[derive(EntityEvent)]
+#[derive(EntityEvent, Debug, Reflect)]
+#[reflect(Debug)]
 pub struct ResetBufferEvent {
     #[event_target]
     pub target: Entity,
@@ -909,7 +941,8 @@ impl From<&ConditionedBindingUpdate> for ResetBufferEvent {
 }
 
 /// Stops any previous input buffers.
-#[derive(Component)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 pub struct ResetBuffer;
 
 impl Condition for ResetBuffer {
@@ -957,14 +990,16 @@ impl Plugin for PrettyNiceInputPlugin {
     }
 }
 
-#[derive(EntityEvent, Debug, Clone)]
+#[derive(EntityEvent, Debug, Clone, Reflect)]
+#[reflect(Debug, Clone)]
 pub struct BindingUpdate {
     #[event_target]
     pub action: Entity,
     pub data: ActionData,
 }
 
-#[derive(EntityEvent, Debug, Clone)]
+#[derive(EntityEvent, Debug, Clone, Reflect)]
+#[reflect(Debug, Clone)]
 pub struct ConditionedBindingUpdate {
     #[event_target]
     pub target: Entity,
@@ -1000,7 +1035,8 @@ impl ConditionedBindingUpdate {
     }
 }
 
-#[derive(EntityEvent)]
+#[derive(EntityEvent, Debug, Reflect)]
+#[reflect(Debug)]
 pub struct InvalidateData {
     #[event_target]
     pub target: Entity,
@@ -1029,7 +1065,8 @@ impl From<&ConditionedBindingUpdate> for InvalidateData {
     }
 }
 
-#[derive(EntityEvent, Debug)]
+#[derive(EntityEvent, Debug, Reflect)]
+#[reflect(Debug)]
 pub struct BindingPartUpdate {
     #[event_target]
     pub binding: Entity,

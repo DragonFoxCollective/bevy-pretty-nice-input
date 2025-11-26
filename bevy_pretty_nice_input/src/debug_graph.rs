@@ -5,7 +5,8 @@ use bevy::ecs::component::{ComponentId, Components, ComponentsRegistrator, Stora
 use bevy::prelude::*;
 use bevy::ptr::{MovingPtr, OwningPtr};
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug, Reflect)]
+#[reflect(Resource, Default, Debug)]
 pub struct DebugGraph {
     pub nodes: HashSet<String>,
     pub edges: Vec<(String, String, String)>,
