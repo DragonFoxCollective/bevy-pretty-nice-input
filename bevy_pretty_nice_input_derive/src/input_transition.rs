@@ -275,7 +275,15 @@ fn build_transition(
     mut conditions: Conditions,
     direction: ObserverArrow,
 ) -> syn::Result<TransitionOutput> {
-    let filters = from.iter().chain(to).cloned().collect::<Vec<_>>();
+    let mut filters = from.to_vec();
+    if let Some(to) = to
+        && matches!(
+            direction,
+            ObserverArrow::LeftBack(_) | ObserverArrow::RightBack(_)
+        )
+    {
+        filters.push(to.clone());
+    }
     conditions.conditions.insert(0, build_filter(&filters));
     let observers =
         if let Some(to) = to {
