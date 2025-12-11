@@ -17,6 +17,7 @@ default = []
 bevy = { version = "0.17", default-features = false, features = ["bevy_log"] }
 bevy_pretty_nice_input_derive = "0.2.0"
 paste = "1.0.15"
+bevy_event_chain = { path = "../../bevy_event_chain/bevy_event_chain" }
 
 [dev-dependencies]
 bevy_rapier3d = { git = "https://github.com/dimforge/bevy_rapier.git" } # releases aren't updated for bevy 0.17 yet
