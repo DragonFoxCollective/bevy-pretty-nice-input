@@ -532,10 +532,10 @@ impl Condition for Cooldown {
         (
             observe(
                 |update: On<ConditionedBindingUpdate>,
-                 mut conditions: Query<&mut Cooldown>,
+                 mut conditions: Query<(&Name, &mut Cooldown)>,
                  mut commands: Commands|
                  -> Result {
-                    let mut condition = conditions.get_mut(update.event_target())?;
+                    let (name, mut condition) = conditions.get_mut(update.event_target())?;
 
                     let data = update.data;
                     let prev_data = condition
@@ -546,15 +546,15 @@ impl Condition for Cooldown {
 
                     if !data.is_zero() && prev_data.is_zero() {
                         if condition.timer.is_finished() {
-                            debug!("Cooling down");
+                            debug!("{} Cooling down", name);
                             update.trigger_next(&mut commands);
                             update.trigger_next_with_data(data.zeroed(), &mut commands);
                         } else {
-                            debug!("Re-cooling down");
+                            debug!("{} Re-cooling down", name);
                         }
                         condition.timer.set_mode(TimerMode::Repeating);
                     } else if data.is_zero() {
-                        debug!("Un-cooling down");
+                        debug!("{} Un-cooling down", name);
                         condition.timer.set_mode(TimerMode::Once);
                         update.trigger_next(&mut commands);
                     }
@@ -572,14 +572,18 @@ impl Condition for Cooldown {
     }
 }
 
-fn tick_cooldown(mut conditions: Query<&mut Cooldown>, time: Res<Time>, mut commands: Commands) {
-    for mut condition in conditions.iter_mut() {
+fn tick_cooldown(
+    mut conditions: Query<(&Name, &mut Cooldown)>,
+    time: Res<Time>,
+    mut commands: Commands,
+) {
+    for (name, mut condition) in conditions.iter_mut() {
         condition.timer.tick(time.delta());
         if condition.timer.is_finished()
             && condition.timer.mode() == TimerMode::Repeating
             && let Some(prev) = &condition.prev
         {
-            debug!("Cooldown finished, sending {:?}", prev.data);
+            debug!("{} Cooldown finished, sending {:?}", name, prev.data);
             prev.trigger_next(&mut commands);
             prev.trigger_next_with_data(prev.data.zeroed(), &mut commands);
         }
@@ -689,9 +693,9 @@ impl Condition for ButtonPress {
             observe(
                 |update: On<ConditionedBindingUpdate>,
                  mut commands: Commands,
-                 mut conditions: Query<&mut ButtonPress>|
+                 mut conditions: Query<(&Name, &mut ButtonPress)>|
                  -> Result {
-                    let mut condition = conditions.get_mut(update.event_target())?;
+                    let (name, mut condition) = conditions.get_mut(update.event_target())?;
 
                     let data = update.data;
                     let prev_data = condition.prev.replace(update.data).unwrap_or(data);
@@ -699,11 +703,11 @@ impl Condition for ButtonPress {
                     if data.is_pressed_with(condition.threshold)
                         && !prev_data.is_pressed_with(condition.threshold)
                     {
-                        debug!("Button Pressed");
+                        debug!("{} Button Pressed", name);
                         update.trigger_next(&mut commands);
                         update.trigger_next_with_data(data.zeroed(), &mut commands);
                     } else if !data.is_pressed_with(condition.threshold) {
-                        debug!("Button Passed");
+                        debug!("{} Button Passed", name);
                         update.trigger_next_with_data(data.zeroed(), &mut commands);
                     }
                     Ok(())
@@ -882,10 +886,10 @@ impl Condition for InputBuffer {
             observe(
                 |reset: On<ResetBufferEvent>,
                  mut commands: Commands,
-                 mut condition: Query<&mut InputBuffer>|
+                 mut condition: Query<(&Name, &mut InputBuffer)>|
                  -> Result {
-                    debug!("Resetting input buffer");
-                    let mut condition = condition.get_mut(reset.event_target())?;
+                    let (name, mut condition) = condition.get_mut(reset.event_target())?;
+                    debug!("Resetting {} input buffer", name);
                     condition.force_finish();
                     if let Some(prev) = &condition.prev {
                         prev.trigger_next_with_data(prev.data.zeroed(), &mut commands);
@@ -898,21 +902,25 @@ impl Condition for InputBuffer {
 }
 
 fn tick_input_buffer(
-    mut conditions: Query<&mut InputBuffer>,
+    mut conditions: Query<(&Name, &mut InputBuffer)>,
     time: Res<Time>,
     mut commands: Commands,
 ) {
-    for mut condition in conditions.iter_mut() {
+    for (name, mut condition) in conditions.iter_mut() {
         condition.timer.tick(time.delta());
         if !condition.timer.is_finished()
             && let Some(prev) = &condition.prev
         {
-            debug!("Input Buffer active, sending {:?}", prev.data);
+            debug!("{} Input Buffer active, sending {:?}", name, prev.data);
             prev.trigger_next(&mut commands);
         } else if condition.timer.just_finished()
             && let Some(prev) = &condition.prev
         {
-            debug!("Input Buffer finished, sending {:?}", prev.data.zeroed());
+            debug!(
+                "{} Input Buffer finished, sending {:?}",
+                name,
+                prev.data.zeroed()
+            );
             prev.trigger_next_with_data(prev.data.zeroed(), &mut commands);
         }
     }
@@ -964,17 +972,18 @@ impl Plugin for PrettyNiceInputPlugin {
         app.add_systems(
             PreUpdate,
             (
-                binding_part_key,
-                binding_part_key_axis,
-                binding_part_gamepad_axis,
-                binding_part_mouse_button,
-                binding_part_mouse_move,
-                binding_part_mouse_scroll,
-                binding_part_mouse_scroll_axis,
-                tick_cooldown,
-                tick_input_buffer,
-                action_initialize,
-            ),
+                (
+                    binding_part_key,
+                    binding_part_key_axis,
+                    binding_part_gamepad_axis,
+                    binding_part_mouse_button,
+                    binding_part_mouse_move,
+                    binding_part_mouse_scroll,
+                    binding_part_mouse_scroll_axis,
+                ),
+                (tick_cooldown, tick_input_buffer, action_initialize),
+            )
+                .chain(),
         )
         .add_observer(pass_reset_buffer);
         #[cfg(feature = "debug_graph")]
@@ -1044,13 +1053,19 @@ fn binding_part_key(
         &BindingPartOf,
         &mut BindingPartData,
     )>,
+    bindings: Query<&Name>,
     mut commands: Commands,
     mut key: MessageReader<KeyboardInput>,
-) {
+) -> Result {
     for message in key.read() {
         for (entity, key, binding_part_of, mut data) in binding_parts.iter_mut() {
+            let name = bindings.get(binding_part_of.0)?;
             let value = message.state.is_pressed() as u8 as f32;
             if key.0 == message.key_code && !message.repeat && data.0 != value {
+                debug!(
+                    "{} Key {:?} value changed from {} to {}",
+                    name, key.0, data.0, value
+                );
                 data.0 = value;
                 commands.trigger(BindingPartUpdate {
                     binding: binding_part_of.0,
@@ -1060,6 +1075,7 @@ fn binding_part_key(
             }
         }
     }
+    Ok(())
 }
 
 fn binding_part_key_axis(
@@ -1328,6 +1344,14 @@ pub fn action<A: Action>(
     // );
 
     let (action_of, mut prev) = actions.get_mut(binding_update.action)?;
+    if prev.0 != binding_update.data {
+        debug!(
+            "Action {} changed from {:?} to {:?}",
+            ShortName::of::<A>(),
+            prev.0,
+            binding_update.data
+        );
+    }
     prev.0 = binding_update.data;
     let input = action_of.0;
 
@@ -1344,22 +1368,14 @@ pub fn action<A: Action>(
 pub fn action_2<A: Action>(
     update: On<ConditionedBindingUpdate>,
     mut actions: Query<(&ActionOf<A>, &mut PrevAction2Data)>,
-    inputs: Query<Has<InputDisabled>>,
     mut commands: Commands,
 ) -> Result {
     let (action_of, mut prev) = actions.get_mut(update.action)?;
     let input = action_of.0;
-    let input_disabled = inputs.get(input)?;
 
-    let data = if input_disabled {
-        update.data.zeroed()
-    } else {
-        update.data
-    };
-    let prev_data = if let Some(prev_data) = prev.0.replace(data) {
-        prev_data
-    } else {
-        debug!("Initialized {}", ShortName::of::<A>());
+    let data = update.data;
+    let Some(prev_data) = prev.0.replace(data) else {
+        debug!("Initialized {} with {:?}", ShortName::of::<A>(), data);
         return Ok(());
     };
 
@@ -1424,6 +1440,7 @@ fn action_initialize(
 ) -> Result {
     for (entity, prev_data, prev_data_2) in actions.iter() {
         if prev_data_2.0.is_none() {
+            // debug!("Try initializing {} with {:?}", name, prev_data.0);
             commands.trigger(BindingUpdate {
                 action: entity,
                 data: prev_data.0,
@@ -1455,7 +1472,7 @@ pub fn action_enable<A: Action>(
 }
 
 pub fn transition_on<A: Action, F: Component, T: Component + Default>(
-    sprint: On<JustPressed<A>>,
+    pressed: On<JustPressed<A>>,
     mut commands: Commands,
 ) {
     debug!(
@@ -1464,13 +1481,13 @@ pub fn transition_on<A: Action, F: Component, T: Component + Default>(
         ShortName::of::<T>()
     );
     commands
-        .entity(sprint.input)
+        .entity(pressed.input)
         .remove::<F>()
         .insert(T::default());
 }
 
 pub fn transition_off<A: Action, F: Component, T: Component + Default>(
-    sprint: On<JustReleased<A>>,
+    released: On<JustReleased<A>>,
     mut commands: Commands,
 ) {
     debug!(
@@ -1479,7 +1496,7 @@ pub fn transition_off<A: Action, F: Component, T: Component + Default>(
         ShortName::of::<T>()
     );
     commands
-        .entity(sprint.input)
+        .entity(released.input)
         .remove::<F>()
         .insert(T::default());
 }
