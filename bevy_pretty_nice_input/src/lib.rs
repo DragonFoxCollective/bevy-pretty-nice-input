@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use std::marker::PhantomData;
 
 use bevy::ecs::query::QueryFilter;
@@ -159,7 +161,7 @@ pub mod binding1d {
 
     use crate::{AxisDirection, BindingPartData, BindingPartOf, MouseScrollDirection};
 
-    /// Binding for a single key in the range [0,1].
+    /// Binding for a single key in the range \[0,1\].
     pub fn key(key: KeyCode) -> impl SpawnableList<BindingPartOf> {
         Spawn((
             Name::new(format!("Key {:?}", key)),
@@ -168,7 +170,7 @@ pub mod binding1d {
         ))
     }
 
-    /// Binding for two keys in the range [-1,1], with one being positive and the other negative.
+    /// Binding for two keys in the range \[-1,1\], with one being positive and the other negative.
     pub fn key_axis(key_pos: KeyCode, key_neg: KeyCode) -> impl SpawnableList<BindingPartOf> {
         Spawn((
             Name::new(format!("Key Axis {:?} / {:?}", key_pos, key_neg)),
@@ -177,7 +179,7 @@ pub mod binding1d {
         ))
     }
 
-    /// Binding for a single gamepad axis in the range [-1,1].
+    /// Binding for a single gamepad axis in the range \[-1,1\].
     pub fn gamepad_axis(axis: GamepadAxis) -> impl SpawnableList<BindingPartOf> {
         Spawn((
             Name::new(format!("Gamepad Axis {:?}", axis)),
@@ -186,7 +188,7 @@ pub mod binding1d {
         ))
     }
 
-    /// Binding for a single mouse button in the range [0,1].
+    /// Binding for a single mouse button in the range \[0,1\].
     pub fn mouse_button(button: MouseButton) -> impl SpawnableList<BindingPartOf> {
         Spawn((
             Name::new(format!("Mouse Button {:?}", button)),
@@ -195,7 +197,7 @@ pub mod binding1d {
         ))
     }
 
-    /// Binding for a single axis of mouse movement in the range [-inf,inf].
+    /// Binding for a single axis of mouse movement in the range \[-inf,inf\].
     pub fn mouse_move_axis(axis: AxisDirection) -> impl SpawnableList<BindingPartOf> {
         Spawn((
             Name::new(format!("Mouse Move Axis {:?}", axis)),
@@ -204,7 +206,7 @@ pub mod binding1d {
         ))
     }
 
-    /// Binding for a single direction of mouse scroll in the range [0,inf].
+    /// Binding for a single direction of mouse scroll in the range \[0,inf\].
     pub fn mouse_scroll(direction: MouseScrollDirection) -> impl SpawnableList<BindingPartOf> {
         Spawn((
             Name::new(format!("Mouse Scroll {:?}", direction)),
@@ -213,7 +215,7 @@ pub mod binding1d {
         ))
     }
 
-    /// Binding for a single axis of mouse scroll in the range [-inf,inf].
+    /// Binding for a single axis of mouse scroll in the range \[-inf,inf\].
     pub fn mouse_scroll_axis(axis: AxisDirection) -> impl SpawnableList<BindingPartOf> {
         Spawn((
             Name::new(format!("Mouse Scroll Axis {:?}", axis)),
