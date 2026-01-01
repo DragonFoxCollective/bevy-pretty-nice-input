@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0
+
+### Changed
+
+- Transitions are now Bundle-based instead of based on single components
+
+### Fixed
+
+- Input buffer sending zeroed data
+
 ## 0.3.1
 
 ### Changed
