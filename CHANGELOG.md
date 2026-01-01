@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+### Changed
+
+- Removed dependency on bevy reflect's auto register (not sure why it was there in the first place)
+
 ## 0.4.0
 
 ### Changed
