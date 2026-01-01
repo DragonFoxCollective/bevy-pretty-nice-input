@@ -649,11 +649,13 @@ impl<F: QueryFilter + Send + Sync + 'static> Condition for InvalidatingFilter<F>
         observe(
             |update: On<ConditionedBindingUpdate>, inputs: Query<(), F>, mut commands: Commands| {
                 if inputs.get(update.input).is_ok() {
-                    debug!(
-                        "Filter passed for {} filtering {}",
-                        ShortName::of::<A>(),
-                        ShortName::of::<F>()
-                    );
+                    if ShortName::of::<F>().to_string() != "Without<InputDisabled>" {
+                        debug!(
+                            "Filter passed for {} filtering {}",
+                            ShortName::of::<A>(),
+                            ShortName::of::<F>()
+                        );
+                    }
                     update.trigger_next(&mut commands);
                 } else {
                     InvalidateData::from(&*update).trigger_next(&mut commands);
@@ -862,7 +864,6 @@ impl Condition for InputBuffer {
                     let mut condition = conditions.get_mut(update.event_target())?;
 
                     let data = update.data;
-                    condition.prev.replace(update.clone());
 
                     update.trigger_next(&mut commands);
                     if !data.is_zero() {
@@ -1473,7 +1474,7 @@ pub fn action_enable<A: Action>(
     Ok(())
 }
 
-pub fn transition_on<A: Action, F: Component, T: Component + Default>(
+pub fn transition_on<A: Action, F: Bundle, T: Bundle + Default>(
     pressed: On<JustPressed<A>>,
     mut commands: Commands,
 ) {
@@ -1488,7 +1489,7 @@ pub fn transition_on<A: Action, F: Component, T: Component + Default>(
         .insert(T::default());
 }
 
-pub fn transition_off<A: Action, F: Component, T: Component + Default>(
+pub fn transition_off<A: Action, F: Bundle, T: Bundle + Default>(
     released: On<JustReleased<A>>,
     mut commands: Commands,
 ) {
