@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2
+
+### Fixed
+
+- Bindings still exist when input systems despawn
+
 ## 0.4.1
 
 ### Changed
