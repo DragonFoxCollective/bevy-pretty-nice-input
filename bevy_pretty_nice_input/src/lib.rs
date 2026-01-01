@@ -457,7 +457,7 @@ fn tick_component_buffer<T: Component>(
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-#[relationship_target(relationship = ActionOf<A>)]
+#[relationship_target(relationship = ActionOf<A>, linked_spawn)]
 pub struct Actions<A: Action>(#[relationship] Vec<Entity>, PhantomData<A>);
 
 #[derive(Component, Debug, Reflect)]
@@ -467,7 +467,7 @@ pub struct ActionOf<A: Action>(#[relationship] Entity, PhantomData<A>);
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component, Debug)]
-#[relationship_target(relationship = BindingOf)]
+#[relationship_target(relationship = BindingOf, linked_spawn)]
 pub struct Bindings(#[relationship] Vec<Entity>);
 
 #[derive(Component, Debug, Reflect)]
@@ -477,7 +477,7 @@ pub struct BindingOf(#[relationship] Entity);
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component, Debug)]
-#[relationship_target(relationship = BindingPartOf)]
+#[relationship_target(relationship = BindingPartOf, linked_spawn)]
 pub struct BindingParts(#[relationship] Vec<Entity>);
 
 #[derive(Component, Debug, Reflect)]
@@ -487,7 +487,7 @@ pub struct BindingPartOf(#[relationship] Entity);
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component, Debug)]
-#[relationship_target(relationship = ConditionOf)]
+#[relationship_target(relationship = ConditionOf, linked_spawn)]
 pub struct Conditions(#[relationship] Vec<Entity>);
 
 #[derive(Component, Debug, Reflect)]
