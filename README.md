@@ -109,45 +109,31 @@ Where BPNI really shines is its state-machine macro.
 
 ```rust ignore
 // input_transition!(action (states) <=/<=>/=> action (states), Axis_D[bindings], [conditions])
-input_transition!(MyAction: Standing <=> Walking, Axis2D[binding2d::wasd()])
+input_transition!((Standing) <=> (Standing, Walking), Axis2D[binding2d::wasd()])
 ```
 
-In this example, `Standing` and `Walking` are two states that transition back and forth depending on the WASD bindings,
+In this example, `Walking` is a state component that transitions back and forth as long as `Standing` is present, depending on the WASD bindings,
 being inserted and removed from the input system entity during the transition.
 
 There are many types of transitions. The transition arrow can be unidirectional in either direction,
 representing whether the transition ocurrs through the [`JustPressed`] or [`JustReleased`] events.
 
 ```rust ignore
-input_transition!(MyActionPressed: Standing => Walking, Axis2D[binding2d::wasd()]) // Transition from Standing to Walking on JustPressed<MyActionPressed>
-input_transition!(MyActionReleased: Standing <= Walking, Axis2D[binding2d::wasd()]) // Transition from Walking to Standing on JustReleased<MyActionReleased>
+input_transition!((Standing) => MyActionPressed (Standing, Walking), Axis2D[binding2d::wasd()]) // Transition from Standing to Walking on JustPressed<MyActionPressed>
+input_transition!(MyActionReleased (Standing) <= (Standing, Walking), Axis2D[binding2d::wasd()]) // Transition from Walking to Standing on JustReleased<MyActionReleased>
 ```
 
-The input system may transition out of multiple states at once, but not into multiple states.
+Components may be prefixed with `!` to mark that the transition from them won't happen if they're present on the input system entity.
 
 ```rust ignore
-input_transition!(MyAction: Standing => (Walking, Sprinting), Axis2D[binding2d::wasd()]) // Compile error
-input_transition!(MyAction: Standing <= (Walking, Sprinting), Axis2D[binding2d::wasd()]) // Transition from Walking or Sprinting to Standing on JustReleased<MyAction>
-```
-
-When transitioning from multiple states, one state may be pointed back to in its bundle.
-
-```rust ignore
-input_transition!(MyAction: Standing <= (Sprinting, => Walking), Axis2D[binding2d::wasd()]) // Transition from Walking or Sprinting to Standing on JustReleased<MyAction>, and from Standing to Walking on JustPressed<MyAction>
-```
-
-For clarity, the state to transition to may be replaced with `*`, representing a manually-controlled transition.
-This is equivalent to the [`input!`] macro with an extra filter.
-
-```rust ignore
-input_transition!(Jump: (Standing, Walking) => *, Axis1D[binding1d::space()]) // Triggers JustPressed<Jump>, but only in the Standing or Walking states
+input_transition!((Standing, !Crouching) <=> (Standing, Walking), Axis2D[binding2d::wasd()]) // Transition from Standing to Walking when not Crouching, and from Walking to Standing regardless of Crouching
 ```
 
 Conditions may be used, but only on unidirectional transitions.
 
 ```rust ignore
-input_transition!(MyAction: Standing => Walking, Axis2D[binding2d::wasd()], [Filter::<Grounded>::default()]) // Transition from Standing to Walking on JustPressed<MyAction>, when the Grounded component is present on the input system
-input_transition!(MyAction: Standing <=> Walking, Axis2D[binding2d::wasd()], [Filter::<Grounded>::default()]) // Compile error
+input_transition!((Standing) => (Standing, Walking), Axis2D[binding2d::wasd()], [Filter::<Grounded>::default()]) // Transition from Standing to Walking on JustPressed<MyAction>, when the Grounded component is present on the input system entity
+input_transition!((Standing) <=> (Standing, Walking), Axis2D[binding2d::wasd()], [Filter::<Grounded>::default()]) // Compile error
 ```
 
 ## [`ComponentBuffer`]
