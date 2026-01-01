@@ -3,6 +3,7 @@ use bevy::window::{CursorGrabMode, CursorOptions};
 use bevy_pretty_nice_input::{
     Action, ButtonPress, ComponentBuffer, Cooldown, FilterBuffered, InputBuffer, JustPressed,
     Pressed, PrettyNiceInputPlugin, ResetBuffer, Updated, binding1d, binding2d, input,
+    input_transition,
 };
 use bevy_rapier3d::prelude::*;
 
@@ -64,9 +65,10 @@ fn setup_env(
 #[derive(Component)]
 pub struct Player {
     speed: f32,
+    sprint_speed: f32,
     jump_force: f32,
     look_sensitivity: f32,
-    walk_velocity: Vec3,
+    walk_direction: Vec3,
     camera: Entity,
     collider: Entity,
 }
@@ -98,9 +100,10 @@ fn setup_player(mut commands: Commands) {
         .spawn((
             Player {
                 speed: 5.0,
+                sprint_speed: 10.0,
                 jump_force: 5.0,
                 look_sensitivity: 0.002,
-                walk_velocity: Vec3::ZERO,
+                walk_direction: Vec3::ZERO,
                 camera,
                 collider,
             },
@@ -111,6 +114,7 @@ fn setup_player(mut commands: Commands) {
             LockedAxes::ROTATION_LOCKED,
             (
                 input!(Walk, Axis2D[binding2d::wasd()]),
+                input_transition!(() <=> (Sprinting), Axis1D[binding1d::left_shift()]),
                 input!(Look, Axis2D[binding2d::mouse_move()]),
                 input!(
                     Jump,
@@ -137,14 +141,24 @@ fn update_walk(walk: On<Updated<Walk>>, mut players: Query<&mut Player>) -> Resu
     let mut player = players.get_mut(walk.input)?;
     let input = walk.data.as_2d_ok()?.clamp_length_max(1.0);
     let walk_direction = Vec3::new(input.x, 0.0, -input.y);
-    player.walk_velocity = walk_direction * player.speed;
+    player.walk_direction = walk_direction;
     Ok(())
 }
 
-fn walk(mut players: Query<(&mut Velocity, &Player, &GlobalTransform)>) {
-    for (mut velocity, player, transform) in players.iter_mut() {
+#[derive(Component, Default)]
+pub struct Sprinting;
+
+fn walk(mut players: Query<(&mut Velocity, &Player, &GlobalTransform, Has<Sprinting>)>) {
+    for (mut velocity, player, transform, sprinting) in players.iter_mut() {
+        let walk_speed = if sprinting {
+            player.sprint_speed
+        } else {
+            player.speed
+        };
+        let walk_velocity = player.walk_direction * walk_speed;
+
         let vertical_velocity = velocity.linvel.project_onto(transform.up().as_vec3());
-        let horizontal_velocity = transform.rotation() * player.walk_velocity;
+        let horizontal_velocity = transform.rotation() * walk_velocity;
         velocity.linvel = vertical_velocity + horizontal_velocity;
     }
 }

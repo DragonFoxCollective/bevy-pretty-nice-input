@@ -4,7 +4,9 @@
 
 ### Changed
 
-- Removed dependency on bevy reflect's auto register (not sure why it was there in the first place)
+- Removed dependency on bevy_reflect
+- Update README
+- Add input_transition! in the example
 
 ## 0.4.0
 

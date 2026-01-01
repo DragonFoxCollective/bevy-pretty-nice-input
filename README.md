@@ -4,7 +4,7 @@
 
 | bevy  | bevy_pretty_nice_input |
 |-------|------------------------|
-| 0.17  | 0.1, 0.2               |
+| 0.17  | 0.1, 0.2, 0.3, 0.4     |
 
 A refreshingly complex input crate for Bevy.
 
@@ -108,7 +108,7 @@ The conditions array in [`input!`] may be omitted entirely.
 Where BPNI really shines is its state-machine macro.
 
 ```rust ignore
-// input_transition!(action: states <=/<=>/=> states, Axis_D[bindings], [conditions])
+// input_transition!(action (states) <=/<=>/=> action (states), Axis_D[bindings], [conditions])
 input_transition!(MyAction: Standing <=> Walking, Axis2D[binding2d::wasd()])
 ```
 
