@@ -1,6 +1,6 @@
 [package]
 name = "bevy_pretty_nice_input"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2024"
 description = "A refreshingly complex input crate for Bevy"
 categories = ["game-development"]
@@ -14,8 +14,11 @@ debug_graph = ["bevy_pretty_nice_input_derive/debug_graph"]
 default = []
 
 [dependencies]
-bevy = { version = "0.17", default-features = false, features = ["bevy_log"] }
-bevy_pretty_nice_input_derive = "0.3.1"
+bevy = { version = "0.17", default-features = false, features = [
+	"bevy_log",
+	"reflect_auto_register",
+] }
+bevy_pretty_nice_input_derive = "0.4.0"
 paste = "1.0.15"
 bevy_event_chain = "0.1.0"
 
