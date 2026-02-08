@@ -1,24 +1,29 @@
 [package]
 name = "bevy_pretty_nice_input"
-version = "0.4.3"
+version = "0.5.0"
 edition = "2024"
+rust-version = "1.92.0"  # Follows bevy 0.18
 description = "A refreshingly complex input crate for Bevy"
-categories = ["game-development"]
-keywords = ["bevy", "input"]
-rust-version = "1.88.0"                                                      # Follows bevy 0.17
-license = "MIT OR Apache-2.0"
 repository = "https://github.com/DragonFoxCollective/bevy_pretty_nice_input"
-
-[features]
-debug_graph = ["bevy_pretty_nice_input_derive/debug_graph"]
-default = []
+license = "MIT OR Apache-2.0"
+keywords = ["bevy", "input"]
+categories = ["game-development"]
 
 [dependencies]
-bevy = { version = "0.17", default-features = false, features = ["bevy_log"] }
-bevy_pretty_nice_input_derive = { path = "../bevy_pretty_nice_input_derive", version = "0.4.3" }
+bevy = { version = "0.18", default-features = false, features = [
+  "bevy_log",
+  "gamepad",
+  "keyboard",
+  "mouse"
+] }
+bevy_event_chain = "0.2.0"
+bevy_pretty_nice_input_derive = { path = "../bevy_pretty_nice_input_derive", version = "0.5.0" }
 paste = "1.0.15"
-bevy_event_chain = "0.1.0"
 
 [dev-dependencies]
-bevy_rapier3d = { git = "https://github.com/dimforge/bevy_rapier.git" } # releases aren't updated for bevy 0.17 yet
-bevy = "0.17"
+bevy = "0.18"
+bevy_rapier3d = { git = "https://github.com/Buncys/bevy_rapier.git", branch = "bevy-0.18.0" }  # releases aren't updated for bevy 0.18 yet
+
+[features]
+default = []
+debug_graph = ["bevy_pretty_nice_input_derive/debug_graph"]

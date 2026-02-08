@@ -26,13 +26,17 @@ unsafe impl<
 > Bundle for AddObserver<E, B, M, I>
 {
     #[inline]
-    fn component_ids(_components: &mut ComponentsRegistrator, _ids: &mut impl FnMut(ComponentId)) {
-        // SAFETY: Empty function body
+    fn component_ids(
+        _components: &mut ComponentsRegistrator,
+    ) -> impl Iterator<Item = ComponentId> + use<E, B, M, I> {
+        // SAFETY: Empty iterator
+        core::iter::empty()
     }
 
     #[inline]
-    fn get_component_ids(_components: &Components, _ids: &mut impl FnMut(Option<ComponentId>)) {
-        // SAFETY: Empty function body
+    fn get_component_ids(_components: &Components) -> impl Iterator<Item = Option<ComponentId>> {
+        // SAFETY: Empty iterator
+        core::iter::empty()
     }
 }
 
@@ -86,13 +90,17 @@ unsafe impl<
 > Bundle for AddSystems<M, I, S>
 {
     #[inline]
-    fn component_ids(_components: &mut ComponentsRegistrator, _ids: &mut impl FnMut(ComponentId)) {
-        // SAFETY: Empty function body
+    fn component_ids(
+        _components: &mut ComponentsRegistrator,
+    ) -> impl Iterator<Item = ComponentId> + use<M, I, S> {
+        // SAFETY: Empty iterator
+        core::iter::empty()
     }
 
     #[inline]
-    fn get_component_ids(_components: &Components, _ids: &mut impl FnMut(Option<ComponentId>)) {
-        // SAFETY: Empty function body
+    fn get_component_ids(_components: &Components) -> impl Iterator<Item = Option<ComponentId>> {
+        // SAFETY: Empty iterator
+        core::iter::empty()
     }
 }
 

@@ -5,6 +5,7 @@
 | bevy  | bevy_pretty_nice_input |
 |-------|------------------------|
 | 0.17  | 0.1, 0.2, 0.3, 0.4     |
+| 0.18  | 0.5
 
 A refreshingly complex input crate for Bevy.
 
