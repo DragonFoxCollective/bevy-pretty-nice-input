@@ -1,6 +1,6 @@
 [package]
 name = "bevy_pretty_nice_input_derive"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2024"
 description = "Procedural macros for bevy_pretty_nice_input"
 repository = "https://github.com/DragonFoxCollective/bevy_pretty_nice_input"

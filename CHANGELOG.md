@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1
+
+### Fixed
+
+- Errors on a case that was ignored
+
 ## 0.5.0
 
 - Update to Bevy 0.18

@@ -16,6 +16,15 @@ pub fn input_transition_impl(input: TokenStream) -> TokenStream {
             to,
             arrow,
         } => {
+            if !to.exclusions.is_empty() {
+                return syn::Error::new_spanned(
+                    to.exclusions[0].to_token_stream(),
+                    "Cannot transition into a not (`!`) predicate",
+                )
+                .to_compile_error()
+                .into();
+            }
+
             let half = InputTransitionHalf {
                 action,
                 from,
