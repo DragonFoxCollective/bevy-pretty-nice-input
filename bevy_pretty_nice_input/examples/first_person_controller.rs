@@ -17,7 +17,6 @@ fn main() -> AppExit {
         .add_plugins(PrettyNiceInputPlugin)
         .add_systems(Startup, (setup_env, setup_player))
         .add_systems(Update, (walk, update_grounded))
-        .add_observer(update_walk)
         .add_observer(look)
         .add_observer(jump)
         .add_observer(exit_app)
@@ -64,7 +63,6 @@ pub struct Player {
     sprint_speed: f32,
     jump_force: f32,
     look_sensitivity: f32,
-    walk_direction: Vec3,
     camera: Entity,
     collider: Entity,
 }
@@ -99,7 +97,6 @@ fn setup_player(mut commands: Commands) {
                 sprint_speed: 10.0,
                 jump_force: 5.0,
                 look_sensitivity: 0.002,
-                walk_direction: Vec3::ZERO,
                 camera,
                 collider,
             },
@@ -109,7 +106,7 @@ fn setup_player(mut commands: Commands) {
             Visibility::default(),
             LockedAxes::ROTATION_LOCKED,
             (
-                input!(Walk, Axis2D[binding2d::wasd()]),
+                input_transition!(() <=> (>Walking), Axis2D[binding2d::wasd()]),
                 input_transition!(() <=> (Sprinting), Axis1D[binding1d::left_shift()]),
                 input!(Look, Axis2D[binding2d::mouse_move()]),
                 input!(
@@ -130,28 +127,32 @@ fn setup_player(mut commands: Commands) {
         .add_children(&[camera, collider]);
 }
 
-#[derive(Action)]
-pub struct Walk;
-
-fn update_walk(walk: On<Updated<Walk>>, mut players: Query<&mut Player>) -> Result<()> {
-    let mut player = players.get_mut(walk.input)?;
-    let input = walk.data.as_2d_ok()?.clamp_length_max(1.0);
-    let walk_direction = Vec3::new(input.x, 0.0, -input.y);
-    player.walk_direction = walk_direction;
-    Ok(())
-}
+#[derive(Component, TryFromActionData)]
+#[action_data(Axis2D)]
+pub struct Walking(Vec2);
 
 #[derive(Component, Default)]
 pub struct Sprinting;
 
-fn walk(mut players: Query<(&mut Velocity, &Player, &GlobalTransform, Has<Sprinting>)>) {
-    for (mut velocity, player, transform, sprinting) in players.iter_mut() {
+fn walk(
+    mut players: Query<(
+        &mut Velocity,
+        &Player,
+        &GlobalTransform,
+        Option<&Walking>,
+        Has<Sprinting>,
+    )>,
+) {
+    for (mut velocity, player, transform, walking, sprinting) in players.iter_mut() {
+        let walk_direction = walking
+            .map(|w| Vec3::new(w.0.x, 0.0, -w.0.y).clamp_length_max(1.0))
+            .unwrap_or_default();
         let walk_speed = if sprinting {
             player.sprint_speed
         } else {
             player.speed
         };
-        let walk_velocity = player.walk_direction * walk_speed;
+        let walk_velocity = walk_direction * walk_speed;
 
         let vertical_velocity = velocity.linvel.project_onto(transform.up().as_vec3());
         let horizontal_velocity = transform.rotation() * walk_velocity;

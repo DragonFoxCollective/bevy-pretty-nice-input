@@ -247,3 +247,13 @@ pub fn transition_off<A: Action, F: Bundle, T: Bundle + Default>(
         .remove::<F>()
         .insert(T::default());
 }
+
+pub fn transition_target<A: Action, T: Component + TryFrom<ActionData, Error = BevyError>>(
+    updated: On<Updated<A>>,
+    mut commands: Commands,
+) -> Result {
+    commands
+        .entity(updated.input)
+        .insert(T::try_from(updated.data)?);
+    Ok(())
+}

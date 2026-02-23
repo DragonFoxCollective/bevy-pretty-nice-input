@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0
+
+## Added
+
+- Non-unit components can receive the input state directly into them
+
+## Changed
+
+- Reorganized crate. Now there's a proper prelude!
+
 ## 0.5.1
 
 ### Fixed

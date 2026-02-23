@@ -25,10 +25,19 @@ pub fn input_transition_impl(input: TokenStream) -> TokenStream {
                 .into();
             }
 
+            if let Some(target) = from.target {
+                return syn::Error::new_spanned(
+                    target.to_token_stream(),
+                    "Cannot target a component in the *from* half",
+                )
+                .to_compile_error()
+                .into();
+            }
+
             let half = InputTransitionHalf {
                 action,
-                from,
-                to: to.inclusions,
+                from: from.into(),
+                to: to.into(),
                 arrow,
                 bindings: input.bindings,
                 conditions: input.conditions,
@@ -56,8 +65,8 @@ pub fn input_transition_impl(input: TokenStream) -> TokenStream {
 
             let left_half = InputTransitionHalf {
                 action: left_action,
-                from: right.clone(),
-                to: left.inclusions.clone(),
+                from: right.clone().into(),
+                to: left.clone().into(),
                 arrow: ObserverArrow::Left,
                 bindings: input.bindings.clone(),
                 conditions: input.conditions.clone(),
@@ -69,8 +78,8 @@ pub fn input_transition_impl(input: TokenStream) -> TokenStream {
 
             let right_half = InputTransitionHalf {
                 action: right_action,
-                from: left,
-                to: right.inclusions,
+                from: left.into(),
+                to: right.into(),
                 arrow: ObserverArrow::Right,
                 bindings: input.bindings,
                 conditions: input.conditions,
@@ -102,6 +111,7 @@ fn input_transition(mut input: InputTransitionHalf) -> syn::Result<syn::Expr> {
         input.action.action(),
         &input.remove_bundle(),
         &input.insert_bundle(),
+        input.to.target.as_ref(),
         &input.arrow,
     )?;
 
@@ -154,16 +164,26 @@ fn build_observers(
     action: &syn::Type,
     remove: &syn::Type,
     insert: &syn::Type,
+    target: Option<&syn::Type>,
     arrow: &ObserverArrow,
 ) -> syn::Result<Vec<syn::Expr>> {
+    let mut observers = vec![];
+
     let transition: syn::Expr = match arrow {
         ObserverArrow::Left => parse_quote! { ::bevy_pretty_nice_input::derive::transition_off },
         ObserverArrow::Right => parse_quote! { ::bevy_pretty_nice_input::derive::transition_on },
     };
-
-    Ok(vec![parse_quote! {
+    observers.push(parse_quote! {
         ::bevy_pretty_nice_input::bundles::observe(#transition::<#action, #remove, #insert>)
-    }])
+    });
+
+    if let Some(target) = target {
+        observers.push(parse_quote!{
+            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::derive::transition_target::<#action, #target>)
+        })
+    }
+
+    Ok(observers)
 }
 
 #[derive(Clone)]
@@ -202,7 +222,7 @@ struct InputTransition {
 struct InputTransitionHalf {
     action: TransitionFromAction,
     from: TransitionFrom,
-    to: Vec<syn::Type>,
+    to: TransitionTo,
     arrow: ObserverArrow,
     bindings: Bindings,
     conditions: Conditions,
@@ -211,7 +231,7 @@ struct InputTransitionHalf {
 impl InputTransitionHalf {
     fn remove_bundle(&self) -> syn::Type {
         let mut remove = self.from.inclusions.iter().cloned().collect::<HashSet<_>>();
-        for inc in &self.to {
+        for inc in &self.to.inclusions {
             remove.remove(inc);
         }
         let mut remove = remove.into_iter().collect::<Vec<_>>();
@@ -220,9 +240,12 @@ impl InputTransitionHalf {
     }
 
     fn insert_bundle(&self) -> syn::Type {
-        let mut insert = self.to.iter().cloned().collect::<HashSet<_>>();
+        let mut insert = self.to.inclusions.iter().cloned().collect::<HashSet<_>>();
         for inc in &self.from.inclusions {
             insert.remove(inc);
+        }
+        if let Some(tar) = &self.to.target {
+            insert.remove(tar);
         }
         let mut insert = insert.into_iter().collect::<Vec<_>>();
         insert.sort_by_key(|t| t.to_token_stream().to_string());
@@ -255,24 +278,19 @@ impl Parse for InputTransition {
 }
 
 #[derive(Clone)]
-struct TransitionFrom {
+struct TransitionHalf {
     action: Option<syn::Type>,
     inclusions: Vec<syn::Type>,
     exclusions: Vec<syn::Type>,
+    target: Option<syn::Type>,
 }
 
-impl TransitionFrom {
-    fn query_filter(&self) -> syn::Type {
-        let inclusions = &self.inclusions;
-        let exclusions = &self.exclusions;
-        parse_quote! { ( #( ::bevy::prelude::With<#inclusions> ,)* #( ::bevy::prelude::Without<#exclusions> ,)* ) }
-    }
-
+impl TransitionHalf {
     fn action(
         &self,
-        left: &TransitionFrom,
+        left: &TransitionHalf,
         arrow: &ObserverArrow,
-        right: &TransitionFrom,
+        right: &TransitionHalf,
     ) -> syn::Result<TransitionFromAction> {
         if let Some(action) = &self.action {
             Ok(TransitionFromAction::Specified(action.clone()))
@@ -283,10 +301,47 @@ impl TransitionFrom {
     }
 }
 
+#[derive(Clone)]
+struct TransitionFrom {
+    inclusions: Vec<syn::Type>,
+    exclusions: Vec<syn::Type>,
+}
+
+impl TransitionFrom {
+    fn query_filter(&self) -> syn::Type {
+        let inclusions = &self.inclusions;
+        let exclusions = &self.exclusions;
+        parse_quote! { ( #( ::bevy::prelude::With<#inclusions> ,)* #( ::bevy::prelude::Without<#exclusions> ,)* ) }
+    }
+}
+
+impl From<TransitionHalf> for TransitionFrom {
+    fn from(value: TransitionHalf) -> Self {
+        Self {
+            inclusions: value.inclusions,
+            exclusions: value.exclusions,
+        }
+    }
+}
+
+struct TransitionTo {
+    inclusions: Vec<syn::Type>,
+    target: Option<syn::Type>,
+}
+
+impl From<TransitionHalf> for TransitionTo {
+    fn from(value: TransitionHalf) -> Self {
+        Self {
+            inclusions: value.inclusions,
+            target: value.target,
+        }
+    }
+}
+
 fn generated_action(
-    left: &TransitionFrom,
+    left: &TransitionHalf,
     arrow: &ObserverArrow,
-    right: &TransitionFrom,
+    right: &TransitionHalf,
 ) -> syn::Result<syn::Type> {
     fn sanitize(s: &str) -> String {
         s.chars()
@@ -330,7 +385,7 @@ fn generated_action(
     syn::parse_str(&format!("Transition_{}_{}_{}", left, arrow, right))
 }
 
-impl Parse for TransitionFrom {
+impl Parse for TransitionHalf {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let action = if input.peek(syn::token::Paren) {
             None
@@ -344,19 +399,28 @@ impl Parse for TransitionFrom {
         let types = content.parse_terminated(TransitionType::parse, Token![,])?;
         let mut inclusions = vec![];
         let mut exclusions = vec![];
+        let mut target = None;
         for ty in types {
             match ty {
                 TransitionType::Inclusion(t) => inclusions.push(t),
                 TransitionType::Exclusion(t) => exclusions.push(t),
+                TransitionType::Target(t) => {
+                    if target.is_some() {
+                        return Err(syn::Error::new_spanned(t, "Only one target is permitted"));
+                    }
+                    inclusions.push(t.clone());
+                    target = Some(t);
+                }
             }
         }
         inclusions.sort_by_key(|t| t.to_token_stream().to_string());
         exclusions.sort_by_key(|t| t.to_token_stream().to_string());
 
-        Ok(TransitionFrom {
+        Ok(TransitionHalf {
             action,
             inclusions,
             exclusions,
+            target,
         })
     }
 }
@@ -375,6 +439,7 @@ impl ToTokens for TransitionFrom {
 enum TransitionType {
     Inclusion(syn::Type),
     Exclusion(syn::Type),
+    Target(syn::Type),
 }
 
 impl Parse for TransitionType {
@@ -383,6 +448,10 @@ impl Parse for TransitionType {
             input.parse::<Token![!]>()?;
             let ty = input.parse::<syn::Type>()?;
             Ok(TransitionType::Exclusion(ty))
+        } else if input.peek(Token![>]) {
+            input.parse::<Token![>]>()?;
+            let ty = input.parse::<syn::Type>()?;
+            Ok(TransitionType::Target(ty))
         } else {
             let ty = input.parse::<syn::Type>()?;
             Ok(TransitionType::Inclusion(ty))
@@ -398,6 +467,9 @@ impl ToTokens for TransitionType {
             }
             TransitionType::Exclusion(ty) => {
                 tokens.extend(quote! { ! #ty });
+            }
+            TransitionType::Target(ty) => {
+                tokens.extend(quote! { > #ty });
             }
         }
     }
@@ -452,23 +524,23 @@ impl ToTokens for TransitionArrow {
 enum Transition {
     Uni {
         action: TransitionFromAction,
-        from: TransitionFrom,
-        to: TransitionFrom,
+        from: TransitionHalf,
+        to: TransitionHalf,
         arrow: ObserverArrow,
     },
     Bi {
         left_action: TransitionFromAction,
-        left: TransitionFrom,
+        left: TransitionHalf,
         right_action: TransitionFromAction,
-        right: TransitionFrom,
+        right: TransitionHalf,
     },
 }
 
 impl Parse for Transition {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let left = input.parse::<TransitionFrom>()?;
+        let left = input.parse::<TransitionHalf>()?;
         let arrow = input.parse::<TransitionArrow>()?;
-        let right = input.parse::<TransitionFrom>()?;
+        let right = input.parse::<TransitionHalf>()?;
 
         match arrow {
             TransitionArrow::Left => Ok(Transition::Uni {

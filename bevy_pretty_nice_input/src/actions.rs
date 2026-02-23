@@ -102,6 +102,14 @@ impl ActionData {
     pub fn is_pressed_with(&self, threshold: f32) -> bool {
         self.length() > threshold
     }
+
+    pub fn debug_name(&self) -> &'static str {
+        match self {
+            ActionData::Axis1D(_) => "Axis1D",
+            ActionData::Axis2D(_) => "Axis2D",
+            ActionData::Axis3D(_) => "Axis3D",
+        }
+    }
 }
 
 #[derive(Component, Debug, Reflect)]

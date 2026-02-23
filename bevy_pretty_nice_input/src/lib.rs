@@ -30,7 +30,7 @@ pub mod prelude {
     };
     pub use crate::events::{JustPressed, JustReleased, Pressed, Updated};
 
-    pub use bevy_pretty_nice_input_derive::{Action, input, input_transition};
+    pub use bevy_pretty_nice_input_derive::{Action, TryFromActionData, input, input_transition};
 }
 
 #[derive(Default)]
