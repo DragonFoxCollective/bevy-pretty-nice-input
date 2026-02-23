@@ -14,7 +14,7 @@ fn input_(mut input: Input) -> syn::Result<syn::Expr> {
     let action = &input.action;
     input.conditions.conditions.insert(
         0,
-        parse_quote!(<#action as ::bevy_pretty_nice_input::Action>::EnableFilter::default()),
+        parse_quote!(<#action as ::bevy_pretty_nice_input::derive::Action>::EnableFilter::default()),
     );
     let bindings = build_bindings(action, &input.bindings);
     let conditions = build_conditions(action, &input.conditions);
@@ -22,7 +22,7 @@ fn input_(mut input: Input) -> syn::Result<syn::Expr> {
     let output = parse_quote! {
         (
             #actions,
-            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::action_enable::<#action>),
+            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::derive::action_enable::<#action>),
         )
     };
     Ok(output)
@@ -35,13 +35,13 @@ fn build_actions(
     conditions: &syn::Expr,
 ) -> syn::Expr {
     parse_quote! {
-        ::bevy::prelude::related!(::bevy_pretty_nice_input::Actions<#action>[(
+        ::bevy::prelude::related!(::bevy_pretty_nice_input::derive::Actions<#action>[(
             ::bevy::prelude::Name::new(format!("{} Action", ::bevy::prelude::ShortName::of::<#action>())),
-            ::bevy_pretty_nice_input::PrevActionData(::bevy_pretty_nice_input::ActionData::#binding_dim(Default::default())),
-            ::bevy_pretty_nice_input::PrevAction2Data::default(),
-            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::action::<#action>),
-            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::action_2::<#action>),
-            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::action_2_invalidate::<#action>),
+            ::bevy_pretty_nice_input::derive::PrevActionData(::bevy_pretty_nice_input::derive::ActionData::#binding_dim(Default::default())),
+            ::bevy_pretty_nice_input::derive::PrevAction2Data::default(),
+            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::derive::action::<#action>),
+            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::derive::action_2::<#action>),
+            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::derive::action_2_invalidate::<#action>),
 
             #bindings,
             #conditions,
@@ -52,10 +52,10 @@ fn build_actions(
 fn build_bindings(action: &syn::Type, bindings: &Bindings) -> syn::Expr {
     let bindings = &bindings.bindings;
     parse_quote! {
-        ::bevy::prelude::related!(::bevy_pretty_nice_input::Bindings[#((
+        ::bevy::prelude::related!(::bevy_pretty_nice_input::derive::Bindings[#((
             ::bevy::prelude::Name::new(format!("{} Binding", ::bevy::prelude::ShortName::of::<#action>())),
-            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::binding),
-            ::bevy_pretty_nice_input::BindingParts::spawn(#bindings),
+            ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::derive::binding),
+            ::bevy_pretty_nice_input::derive::BindingParts::spawn(#bindings),
         )),*])
     }
 }
@@ -63,15 +63,14 @@ fn build_bindings(action: &syn::Type, bindings: &Bindings) -> syn::Expr {
 fn build_conditions(action: &syn::Type, conditions: &Conditions) -> syn::Expr {
     let conditions = &conditions.conditions;
     parse_quote! {
-        ::bevy::prelude::related!(::bevy_pretty_nice_input::Conditions[#((
+        ::bevy::prelude::related!(::bevy_pretty_nice_input::derive::Conditions[#((
             ::bevy::prelude::Name::new(format!("{} Condition", ::bevy::prelude::ShortName::of::<#action>())),
             {
-                use ::bevy_pretty_nice_input::Condition;
                 let condition = #conditions;
                 (
-                    condition.bundle::<#action>(),
+                    ::bevy_pretty_nice_input::derive::Condition::bundle::<#action>(&condition),
                     condition,
-                    ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::invalidate_pass),
+                    ::bevy_pretty_nice_input::bundles::observe(::bevy_pretty_nice_input::derive::invalidate_pass),
                 )
             }
         )),*])

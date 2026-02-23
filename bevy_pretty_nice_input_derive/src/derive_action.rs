@@ -59,13 +59,13 @@ fn action(input: DeriveInput) -> syn::Result<syn::ItemImpl> {
     }
 
     let enable_filter: Type = if invalidate.unwrap_or(true) {
-        parse_quote!(::bevy_pretty_nice_input::IsInputEnabledInvalidate)
+        parse_quote!(::bevy_pretty_nice_input::prelude::IsInputEnabledInvalidate)
     } else {
-        parse_quote!(::bevy_pretty_nice_input::IsInputEnabled)
+        parse_quote!(::bevy_pretty_nice_input::prelude::IsInputEnabled)
     };
 
     Ok(parse_quote! {
-        impl ::bevy_pretty_nice_input::Action for #ident {
+        impl ::bevy_pretty_nice_input::prelude::Action for #ident {
             type EnableFilter = #enable_filter;
         }
     })

@@ -121,7 +121,7 @@ fn build_output(
 ) -> syn::Expr {
     let inner: syn::Expr = parse_quote! {
         (
-            ::bevy_pretty_nice_input::input!(
+            ::bevy_pretty_nice_input::prelude::input!(
                 #action,
                 #bindings,
                 #conditions,
@@ -134,7 +134,7 @@ fn build_output(
         TransitionFromAction::Generated(_) => {
             parse_quote! {
                 {
-                    #[derive(::bevy_pretty_nice_input::Action)]
+                    #[derive(::bevy_pretty_nice_input::prelude::Action)]
                     struct #action;
 
                     #inner
@@ -146,7 +146,7 @@ fn build_output(
 
 fn build_filter(from: &syn::Type) -> syn::Expr {
     parse_quote! {
-        ::bevy_pretty_nice_input::InvalidatingFilter::< #from >::default()
+        ::bevy_pretty_nice_input::prelude::InvalidatingFilter::< #from >::default()
     }
 }
 
@@ -157,8 +157,8 @@ fn build_observers(
     arrow: &ObserverArrow,
 ) -> syn::Result<Vec<syn::Expr>> {
     let transition: syn::Expr = match arrow {
-        ObserverArrow::Left => parse_quote! { ::bevy_pretty_nice_input::transition_off },
-        ObserverArrow::Right => parse_quote! { ::bevy_pretty_nice_input::transition_on },
+        ObserverArrow::Left => parse_quote! { ::bevy_pretty_nice_input::derive::transition_off },
+        ObserverArrow::Right => parse_quote! { ::bevy_pretty_nice_input::derive::transition_on },
     };
 
     Ok(vec![parse_quote! {

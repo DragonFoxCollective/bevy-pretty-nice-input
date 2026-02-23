@@ -1,10 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, CursorOptions};
-use bevy_pretty_nice_input::{
-    Action, ButtonPress, ComponentBuffer, Cooldown, FilterBuffered, InputBuffer, JustPressed,
-    Pressed, PrettyNiceInputPlugin, ResetBuffer, Updated, binding1d, binding2d, input,
-    input_transition,
-};
+use bevy_pretty_nice_input::{binding1d, binding2d, prelude::*};
 use bevy_rapier3d::prelude::*;
 
 fn main() -> AppExit {
