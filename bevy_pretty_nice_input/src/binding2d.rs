@@ -1,3 +1,5 @@
+//! 2-dimensional bindings, such as WASD or an entire joystick.
+
 use bevy::ecs::spawn::SpawnableList;
 use bevy::prelude::*;
 

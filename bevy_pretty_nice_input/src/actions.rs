@@ -4,6 +4,7 @@ use bevy::prelude::*;
 
 use crate::conditions::Condition;
 
+/// Wrapper for each supported datatype returned from bindings.
 #[derive(Clone, Copy, Debug, PartialEq, Reflect)]
 #[reflect(Clone, Debug, PartialEq)]
 pub enum ActionData {
@@ -120,8 +121,11 @@ pub struct PrevActionData(pub ActionData);
 #[reflect(Component, Default, Debug)]
 pub struct PrevAction2Data(pub Option<ActionData>);
 
+/// Abstraction layer for bindings, so you can change the bindings at any time without changing the usage of that binding's action.
 pub trait Action: Send + Sync + 'static {
-    /// Which filter determines how enabled/disabled input is processed. Generally, this should either be [`IsInputEnabled`] or [`IsInputEnabledInvalidate`].
+    /// Which filter determines how enabled/disabled input is processed.
+    ///
+    /// Generally, this should either be [`IsInputEnabled`](crate::prelude::IsInputEnabled) or [`IsInputEnabledInvalidate`](crate::prelude::IsInputEnabledInvalidate).
     type EnableFilter: Condition;
 }
 

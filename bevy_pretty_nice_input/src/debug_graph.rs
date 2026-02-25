@@ -21,13 +21,17 @@ pub struct AddGraphEdge {
 // SAFETY: Empty method bodies.
 unsafe impl Bundle for AddGraphEdge {
     #[inline]
-    fn component_ids(_components: &mut ComponentsRegistrator, _ids: &mut impl FnMut(ComponentId)) {
-        // SAFETY: Empty function body
+    fn component_ids(
+        _components: &mut ComponentsRegistrator,
+    ) -> impl Iterator<Item = ComponentId> + use<> {
+        // SAFETY: Empty iterator
+        core::iter::empty()
     }
 
     #[inline]
-    fn get_component_ids(_components: &Components, _ids: &mut impl FnMut(Option<ComponentId>)) {
-        // SAFETY: Empty function body
+    fn get_component_ids(_components: &Components) -> impl Iterator<Item = Option<ComponentId>> {
+        // SAFETY: Empty iterator
+        core::iter::empty()
     }
 }
 

@@ -1,3 +1,5 @@
+//! All the types that should be private but can't be because they're used in macros.
+
 use std::marker::PhantomData;
 
 use bevy::prelude::*;

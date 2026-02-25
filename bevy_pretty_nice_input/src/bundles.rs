@@ -1,3 +1,5 @@
+//! Bundle effect versions of observers and systems, copied here while built-in Bevy versions are experimental.
+
 #![expect(unsafe_code, reason = "Unsafe code is used to improve performance.")]
 
 use std::marker::PhantomData;

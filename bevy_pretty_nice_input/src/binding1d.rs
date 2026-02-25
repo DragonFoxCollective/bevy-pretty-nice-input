@@ -1,3 +1,5 @@
+//! 1-dimensional bindings, such as a single key press or joystick axis.
+
 use bevy::ecs::spawn::SpawnableList;
 use bevy::prelude::*;
 

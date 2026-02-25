@@ -7,6 +7,7 @@ use crate::bundles::{add_systems, observe};
 use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
 
+/// Filter layer that each binding's input will pass through so it may be discarded, invalidated, or changed.
 pub trait Condition {
     fn bundle<A: Action>(&self) -> impl Bundle;
 }
@@ -21,12 +22,13 @@ pub struct Conditions(#[relationship] Vec<Entity>);
 #[relationship(relationship_target = Conditions)]
 pub struct ConditionOf(#[relationship] Entity);
 
+/// Event passed through each Condition to determine whether and how the [`Action`] is changed.
 #[derive(RelatedChainEvent, Clone, Debug, Reflect)]
 #[reflect(Clone, Debug)]
 #[related_chain_event(relationship_target = Conditions, relationship = ConditionOf)]
 pub struct ConditionedBindingUpdate {
     #[event_target]
-    pub chain: RelatedEventChain,
+    pub(crate) chain: RelatedEventChain,
     pub input: Entity,
     pub action: Entity,
     pub data: ActionData,
@@ -53,7 +55,7 @@ pub fn invalidate_pass(invalidate: On<InvalidateData>, mut commands: Commands) {
     invalidate.trigger_next(&mut commands);
 }
 
-/// Only lets one valid input pass every duration.
+/// [`Condition`] that only lets one valid input pass every duration.
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component, Debug)]
 pub struct Cooldown {
@@ -132,16 +134,17 @@ pub fn tick_cooldown(
     }
 }
 
-/// Only lets the input pass if the query filter matches.
+/// [`Condition`] that only lets the input pass if the query filter matches.
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
 pub struct Filter<F: QueryFilter> {
     _marker: PhantomData<F>,
 }
 
+/// [`Condition`] that filters for [`ComponentBuffer<F>`].
 pub type FilterBuffered<F> = Filter<With<ComponentBuffer<F>>>;
 
-/// Works best for state machines, when controls can change while the input is disabled.
+/// [`Condition`] that filters out [`InputDisabled`].
 pub type IsInputEnabled = Filter<Without<InputDisabled>>;
 
 impl<F: QueryFilter> Default for Filter<F> {
@@ -166,14 +169,14 @@ impl<F: QueryFilter + Send + Sync + 'static> Condition for Filter<F> {
     }
 }
 
-/// Only lets the input pass if the query filter matches. Otherwise, invalidates the input.
+/// [`Condition`] that only lets the input pass if the query filter matches. Otherwise, [invalidates](InvalidateData) the input.
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
 pub struct InvalidatingFilter<F: QueryFilter> {
     _marker: PhantomData<F>,
 }
 
-/// Works best for state-agnostic inputs, like opening/closing menus, where keeping the previous input would be harmful.
+/// [`Condition`] that [invalidates](InvalidateData) input with [`InputDisabled`].
 pub type IsInputEnabledInvalidate = InvalidatingFilter<Without<InputDisabled>>;
 
 impl<F: QueryFilter> Default for InvalidatingFilter<F> {
@@ -205,7 +208,7 @@ impl<F: QueryFilter + Send + Sync + 'static> Condition for InvalidatingFilter<F>
     }
 }
 
-/// Rising edge filter.
+/// [`Condition`] that acts as a rising edge filter.
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component, Debug)]
 pub struct ButtonPress {
@@ -270,7 +273,7 @@ impl Condition for ButtonPress {
     }
 }
 
-/// Falling edge filter.
+/// [`Condition`] that acts as a falling edge filter.
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component, Debug)]
 pub struct ButtonRelease {
@@ -331,7 +334,7 @@ impl Condition for ButtonRelease {
     }
 }
 
-/// Inverts the update between zero and nonzero, using the last nonzero input when the current input is zero.
+/// [`Condition`] that inverts the update between zero and nonzero, using the last nonzero input when the current input is zero.
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component, Debug)]
 pub struct Invert {
@@ -368,7 +371,7 @@ impl Condition for Invert {
     }
 }
 
-/// Continues sending nonzero updates for a duration after the input stops being nonzero.
+/// [`Condition`] that continues sending nonzero updates for a duration after the input stops being nonzero.
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component, Debug)]
 pub struct InputBuffer {
@@ -485,7 +488,7 @@ impl From<&ConditionedBindingUpdate> for ResetBufferEvent {
     }
 }
 
-/// Stops any previous input buffers.
+/// [`Condition`] that stops any previous [`InputBuffer`]s.
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component, Debug)]
 pub struct ResetBuffer;
@@ -507,6 +510,10 @@ pub fn pass_reset_buffer(reset: On<ResetBufferEvent, ConditionOf>, mut commands:
     reset.trigger_next(&mut commands);
 }
 
+/// Event sent from [`Condition`]s that forces the action to be invalidated.
+///
+/// Invalidated actions unset their previous state, so the next input will be used as the next previous state.
+/// For example, if an action is invalidated and its binding is held down, it won't trigger [`JustPressed`](crate::prelude::JustPressed) regardless of whether it was held down before the invalidation.
 #[derive(RelatedChainEvent, Clone, Debug, Reflect)]
 #[reflect(Clone, Debug)]
 #[related_chain_event(relationship_target = Conditions, relationship = ConditionOf)]
@@ -523,7 +530,25 @@ impl From<&ConditionedBindingUpdate> for InvalidateData {
     }
 }
 
-/// Gets added when its component is added, and removed after the timer expires when its component is removed.
+/// Component that gets inserted when its component is inserted, and removed *after the timer expires* when its component is removed.
+///
+/// Component buffering is the component compliment to [input buffering](InputBuffer), and can be used for "coyote time" behavior.
+///
+/// Insert [`ComponentBuffer::observe`] to set this up.
+///
+/// This example adds `ComponentBuffer<Grounded>` when `Grounded` is added, and removes it 0.2 seconds after `Grounded` is removed:
+///
+/// ```rust
+/// # use bevy::prelude::*;
+/// # use bevy_pretty_nice_input::prelude::*;
+/// #[derive(Component, Default)]
+/// struct Grounded;
+///
+/// ComponentBuffer::<Grounded>::observe(0.2)
+/// # ;
+/// ```
+///
+/// For convenience, there is an alias for `Filter<With<ComponentBuffer<T>>>` that is [`FilterBuffered<T>`].
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
 pub struct ComponentBuffer<T: Component> {
@@ -532,6 +557,7 @@ pub struct ComponentBuffer<T: Component> {
 }
 
 impl<T: Component> ComponentBuffer<T> {
+    /// Bundle of observers to insert/remove [`ComponentBuffer`]
     pub fn observe(duration: f32) -> impl Bundle {
         (
             observe(move |add: On<Add, T>, mut commands: Commands| {
@@ -568,6 +594,7 @@ fn tick_component_buffer<T: Component>(
     }
 }
 
+/// Marker component for input systems that should stop receiving updates.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 pub struct InputDisabled;

@@ -4,6 +4,7 @@ use bevy::prelude::*;
 
 use crate::actions::{Action, ActionData};
 
+/// Event fired when an input goes from zero to nonzero.
 #[derive(EntityEvent, Debug, Reflect)]
 pub struct JustPressed<A: Action> {
     #[event_target]
@@ -22,6 +23,7 @@ impl<A: Action> Clone for JustPressed<A> {
     }
 }
 
+/// Event fired when an input is nonzero.
 #[derive(EntityEvent, Debug, Reflect)]
 pub struct Pressed<A: Action> {
     #[event_target]
@@ -40,6 +42,7 @@ impl<A: Action> Clone for Pressed<A> {
     }
 }
 
+/// Event fired when an input goes from nonzero to zero.
 #[derive(EntityEvent, Debug, Reflect)]
 pub struct JustReleased<A: Action> {
     #[event_target]
@@ -56,6 +59,7 @@ impl<A: Action> Clone for JustReleased<A> {
     }
 }
 
+/// Event fired when input happens at all.
 #[derive(EntityEvent, Debug, Reflect)]
 pub struct Updated<A: Action> {
     #[event_target]

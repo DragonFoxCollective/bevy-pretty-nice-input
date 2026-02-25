@@ -1,158 +1,17 @@
 # bevy_pretty_nice_input
 
-[![crates.io](https://img.shields.io/crates/v/bevy_pretty_nice_input)](https://crates.io/crates/bevy_pretty_nice_input)
+[![Crates.io](https://img.shields.io/crates/v/bevy_pretty_nice_input)](https://crates.io/crates/bevy_pretty_nice_input)
+[![Docs](https://docs.rs/bevy_pretty_nice_input/badge.svg)](https://docs.rs/bevy_pretty_nice_input)
+
+An action- and component-based input crate for Bevy.
+
+## Getting started
+
+Check the [docs](https://docs.rs/bevy_pretty_nice_input) and [example](https://github.com/DragonFoxCollective/bevy_pretty_nice_input/blob/main/bevy_pretty_nice_input/examples/first_person_controller.rs)!
+
+## Bevy compatibility
 
 | bevy  | bevy_pretty_nice_input |
 |-------|------------------------|
 | 0.17  | 0.1, 0.2, 0.3, 0.4     |
-| 0.18  | 0.5
-
-A refreshingly complex input crate for Bevy.
-
-It works similarly to [bevy_enhanced_input](https://crates.io/crates/bevy_enhanced_input).
-
-An input system entity relates to several [`Action`](crate::ActionOf) entities, which each relate to several [`Binding`](crate::BindingOf)
-entities (which then related to several [`BindingPart`](crate::BindingPartOf) entities) and [`Condition`](crate::ConditionOf) entities.
-
-When an input occurs, it may trigger one of several Bevy events:
-
-- [`JustPressed<A: Action>`]: When an input goes from zero to nonzero.
-- [`Pressed<A: Action>`]: When an input is nonzero.
-- [`JustReleased<A: Action>`]: When an input goes from nonzero to zero.
-- [`Updated<A: Action>`]: Any input
-
-Actions keep track of previous successful inputs in order to trigger events.
-If the previous input is nonexistant, for instance if the input is *invalidated*,
-the action is ignored, since the events require a previous input to compare against.
-
-An input system entity can be disabled by inserting [`InputDisabled`] on it.
-
-# Usage
-
-Add the [`PrettyNiceInputPlugin`] plugin to your app.
-
-## [`input!`]
-
-The input system starts with the simple [`input!`] macro:
-
-```rust ignore
-// input!(action, Axis_D[bindings], [conditions])
-input!(MyAction, Axis2D[binding2d::wasd()], [Cooldown::new(0.5)])
-```
-
-[`input!`] builds a bundle that can be added to the entity representing the input system or player controller.
-
-## [`Action`]
-
-`MyAction` is a struct that implements [`Action`]:
-
-```rust ignore
-#[derive(Action)]
-#[action(invalidate = true)]
-pub struct MyAction;
-```
-
-`invalidate` represents what happens when the input system is disabled.
-Either the system remembers the previous input state if false, or forgets it if true.
-It defaults to `true` if omitted.
-`invalidate = false` is best used for actions that need to be maintained while in a certain state.
-`invalidate = true` is best used for actions that work regardless of state.
-
-## [`Binding`](BindingOf)
-
-Bindings can be N-axis, where N is 1 (for single button presses or single joystick axes), 2 (for wasd or entire joysticks), or 3 (composed of other bindings).
-
-Many bindings can be found in the [`binding1d`] or [`binding2d`] modules. These are the arbitrary bindings:
-
-- [`binding1d::key(key: KeyCode)`](binding1d::key): Binding for a single key in the range \[0,1\].
-- [`binding1d::key_axis(key_pos: KeyCode, key_neg: KeyCode)`](binding1d::key_axis): Binding for two keys in the range \[-1,1\], with one being positive and the other negative.
-- [`binding1d::gamepad_axis(axis: GamepadAxis)`](binding1d::gamepad_axis): Binding for a single gamepad axis in the range \[-1,1\].
-- [`binding1d::mouse_button(button: MouseButton)`](binding1d::mouse_button): Binding for a single mouse button in the range \[0,1\].
-- [`binding1d::mouse_move_axis(axis: AxisDirection)`](binding1d::mouse_move_axis): Binding for a single axis of mouse movement in the range \[-inf,inf\].
-- [`binding1d::mouse_scroll(direction: MouseScrollDirection)`](binding1d::mouse_scroll): Binding for a single direction of mouse scroll in the range \[0,inf\].
-- [`binding1d::mouse_scroll_axis(axis: AxisDirection)`](binding1d::mouse_scroll_axis): Binding for a single axis of mouse scroll in the range \[-inf,inf\].
-
-There are also shorthand bindings for common scenarios such as [`binding1d::space()`](binding1d::space) and [`binding2d::wasd()`](binding2d::wasd).
-
-Bindings may be composed into one bundle:
-
-```rust ignore
-input!(... Axis2D[binding2d::wasd()] ...)
-// is equivalent to
-input!(... Axis2D[(key_axis(KeyCode::KeyD, KeyCode::KeyA), key_axis(KeyCode::KeyW, KeyCode::KeyS))] ...)
-```
-
-The bindings given to [`input!`] must match the dimensionality of the `Axis1D`, `Axis2D`, or `Axis3D` keyword.
-
-## [`Condition`]
-
-Conditions allow input to be filtered or modified.
-
-The [`Condition`] trait may be implemented for custom conditions.
-The only function is [`fn bundle<A: Action>(&self) -> impl Bundle`](Condition::bundle), which returns a bundle added to the condition entity.
-
-Common conditions include:
-
-- [`Cooldown`]: Only lets one valid input pass every duration.
-- [`Filter<F: QueryFilter>`]: Only lets the input pass if the query filter matches.
-- [`InvalidatingFilter<F: QueryFilter>`]: Only lets the input pass if the query filter matches. Otherwise, invalidates the input.
-- [`ButtonPress`]: Rising edge filter.
-- [`ButtonRelease`]: Falling edge filter.
-- [`Invert`]: Inverts the update between zero and nonzero, using the last nonzero input when the current input is zero.
-- [`InputBuffer`]: Continues sending nonzero updates for a duration after the input stops being nonzero.
-- [`ResetBuffer`]: Stops any previous input buffers. Doesn't affect the current input in any way.
-
-The conditions array in [`input!`] may be omitted entirely.
-
-## [`input_transition!`]
-
-Where BPNI really shines is its state-machine macro.
-
-```rust ignore
-// input_transition!(action (states) <=/<=>/=> action (states), Axis_D[bindings], [conditions])
-input_transition!((Standing) <=> (Standing, Walking), Axis2D[binding2d::wasd()])
-```
-
-In this example, `Walking` is a state component that transitions back and forth as long as `Standing` is present, depending on the WASD bindings,
-being inserted and removed from the input system entity during the transition.
-
-There are many types of transitions. The transition arrow can be unidirectional in either direction,
-representing whether the transition ocurrs through the [`JustPressed`] or [`JustReleased`] events.
-
-```rust ignore
-input_transition!((Standing) => MyActionPressed (Standing, Walking), Axis2D[binding2d::wasd()]) // Transition from Standing to Walking on JustPressed<MyActionPressed>
-input_transition!(MyActionReleased (Standing) <= (Standing, Walking), Axis2D[binding2d::wasd()]) // Transition from Walking to Standing on JustReleased<MyActionReleased>
-```
-
-Components may be prefixed with `!` to mark that the transition from them won't happen if they're present on the input system entity.
-
-```rust ignore
-input_transition!((Standing, !Crouching) <=> (Standing, Walking), Axis2D[binding2d::wasd()]) // Transition from Standing to Walking when not Crouching, and from Walking to Standing regardless of Crouching
-```
-
-Conditions may be used, but only on unidirectional transitions.
-
-```rust ignore
-input_transition!((Standing) => (Standing, Walking), Axis2D[binding2d::wasd()], [Filter::<Grounded>::default()]) // Transition from Standing to Walking on JustPressed<MyAction>, when the Grounded component is present on the input system entity
-input_transition!((Standing) <=> (Standing, Walking), Axis2D[binding2d::wasd()], [Filter::<Grounded>::default()]) // Compile error
-```
-
-## [`ComponentBuffer`]
-
-Component buffering is the compliment to input buffering. A common use case for component buffering is "coyote time".
-
-Component buffering manages a separate state component [`ComponentBuffer<T: Component>`],
-adding it when `T` is added, and removing it a certain amount of time after `T` is removed.
-
-Component buffers can be set up by adding [`ComponentBuffer::observe(duration: f32)`](ComponentBuffer::observe) to the input system.
-
-```rust ignore
-ComponentBuffer::<Grounded>::observe(0.2) // Adds ComponentBuffer<Grounded> when Grounded is added, and removes it 0.2 seconds after Grounded is removed
-```
-
-For convenience, there is an alias for `Filter<With<ComponentBuffer<T>>>` that is [`FilterBuffered<T>`].
-
-## [`bundles::observe`] and [`bundles::add_systems`]
-
-[`observe`](bundles::observe) and [`add_systems`](bundles::add_systems) are bundle effect versions of [`entity.observe`](bevy::ecs::prelude::EntityCommands::observe) and [`schedule.add_systems`](bevy::ecs::schedule::Schedule::add_systems) respectively.
-`observe` already exists in Bevy, but only in the experiemental UI crate that I didn't want to depend on.
+| 0.18  | 0.5, 0.6               |

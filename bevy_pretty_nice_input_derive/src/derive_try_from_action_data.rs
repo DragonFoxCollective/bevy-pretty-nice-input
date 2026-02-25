@@ -29,7 +29,7 @@ fn try_from_action_data(input: DeriveInput) -> syn::Result<syn::ItemImpl> {
 
             fn try_from(value: ::bevy_pretty_nice_input::derive::ActionData) -> std::result::Result<Self, Self::Error> {
                 match value {
-                    ::bevy_pretty_nice_input::derive::ActionData::#dim(val) => Ok(Self(val)),
+                    ::bevy_pretty_nice_input::derive::ActionData::#dim(val) => Ok(Self(val.into())),
                     _ => Err(::bevy::prelude::BevyError::from(format!(
                         "Expected #dim, found {}",
                         value.debug_name()
