@@ -254,6 +254,11 @@ pub fn transition_target<A: Action, T: Component + TryFrom<ActionData, Error = B
     updated: On<Updated<A>>,
     mut commands: Commands,
 ) -> Result {
+    debug!(
+        "Transition updating {} with {:?}",
+        ShortName::of::<T>(),
+        updated.data
+    );
     commands
         .entity(updated.input)
         .insert(T::try_from(updated.data)?);
