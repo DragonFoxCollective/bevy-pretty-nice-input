@@ -27,3 +27,6 @@ bevy_rapier3d = { git = "https://github.com/Buncys/bevy_rapier.git", branch = "b
 [features]
 default = []
 debug_graph = ["bevy_pretty_nice_input_derive/debug_graph"]
+
+[lints.clippy]
+type_complexity = "allow"
