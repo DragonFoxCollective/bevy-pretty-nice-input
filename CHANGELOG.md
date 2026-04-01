@@ -1,12 +1,18 @@
 # Changelog
 
+## 0.6.1
+
+### Added
+
+- `PrettyNiceInputSystems`, a `SystemSet` containing all systems.
+
 ## 0.6.0
 
-## Added
+### Added
 
 - Non-unit components can receive the input state directly into them
 
-## Changed
+### Changed
 
 - Reorganized crate. Now there's a proper prelude!
 

@@ -195,6 +195,10 @@ pub mod prelude {
 #[derive(Default)]
 pub struct PrettyNiceInputPlugin;
 
+/// [`SystemSet`] containing all input systems.
+#[derive(SystemSet, Clone, PartialEq, Eq, Hash, Debug)]
+pub struct PrettyNiceInputSystems;
+
 impl Plugin for PrettyNiceInputPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
@@ -215,7 +219,8 @@ impl Plugin for PrettyNiceInputPlugin {
                     derive::action_initialize,
                 ),
             )
-                .chain(),
+                .chain()
+                .in_set(PrettyNiceInputSystems),
         )
         .add_observer(conditions::pass_reset_buffer);
 
