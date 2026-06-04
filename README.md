@@ -1,3 +1,6 @@
+> [!WARNING]
+> This repo is archived because its source code is now being hosted on [our website](https://git.dragonfox.dev/DragonFoxCollective/bevy_pretty_nice_input)!
+
 # bevy_pretty_nice_input
 
 [![Crates.io](https://img.shields.io/crates/v/bevy_pretty_nice_input)](https://crates.io/crates/bevy_pretty_nice_input)
